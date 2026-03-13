@@ -18,7 +18,7 @@ services:
         source: /tmp
         target: /opt/nim/.cache/
     environment:
-      - NGC_API_KEY=${NVIDIA_API_KEY:?Error NVIDIA_API_KEY not set}
+      - NGC_API_KEY='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'
       
 networks:
   default:

@@ -183,7 +183,9 @@ _LOCAL_CSS = """
 }
 """
 
-sys.stdout = logger.Logger("/project/code/output.log")
+import os
+log_path = os.environ.get("LOG_FILE_PATH", os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "output.log"))
+sys.stdout = logger.Logger(log_path)
 
 def build_page(client: chat_client.ChatClient) -> gr.Blocks:
     """
@@ -263,7 +265,9 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
                         
                         # Diagram of the agentic websearch RAG workflow
                         with gr.Row():
-                            agentic_flow = gr.Image("/project/code/chatui/static/agentic-flow.png", 
+                            # Find image path dynamically
+                            image_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "static", "agentic-flow.png")
+                            agentic_flow = gr.Image(image_path, 
                                                     show_label=False,
                                                     show_download_button=False,
                                                     interactive=False)

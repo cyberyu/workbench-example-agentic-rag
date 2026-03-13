@@ -17,6 +17,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import (
     WebBaseLoader,
     UnstructuredPDFLoader,
+    UnstructuredWordDocumentLoader,
     TextLoader,
     CSVLoader 
 )
@@ -37,6 +38,12 @@ INTERNAL_API = os.getenv('INTERNAL_API', 'no')
 
 # Default model for public embedding
 EMBEDDINGS_MODEL = 'nvidia/nv-embedqa-e5-v5'
+
+# Get project root dynamically - works both inside and outside AI Workbench
+PROJECT_ROOT = os.environ.get('PROJECT_ROOT', os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
+DATA_DIR = os.path.join(PROJECT_ROOT, 'data')
+# Ensure data directory exists
+os.makedirs(DATA_DIR, exist_ok=True)
 
 # Set the chunk size and overlap for the text splitter. Uses defaults but allows them to be set as environment variables.
 DEFAULT_CHUNK_SIZE = 250
@@ -125,7 +132,7 @@ def upload(urls: List[str]):
             documents=doc_splits,
             collection_name="rag-chroma",
             embedding=NVIDIAEmbeddings(model=EMBEDDINGS_MODEL),
-            persist_directory="/project/data",
+            persist_directory=DATA_DIR,
         )
         return vectorstore
 
@@ -145,20 +152,24 @@ def load_documents_from_files(file_paths: List[str]) -> List[Any]:
     for fpath in file_paths:
         ext = os.path.splitext(fpath)[-1].lower()
 
-        loader_cls = {
-            ".pdf": UnstructuredPDFLoader,
-            ".txt": TextLoader,
-            ".md": TextLoader,
-            ".csv": CSVLoader
-        }.get(ext)
-
-        if loader_cls is None:
-            print(f"[load_documents] Skipping unsupported file type: {fpath}")
-            continue
-
         try:
-            loaded = loader_cls(fpath).load()
+            if ext == ".pdf":
+                # Use mode="elements" to preserve table structure in PDFs
+                loader = UnstructuredPDFLoader(fpath, mode="elements")
+            elif ext in [".docx", ".doc"]:
+                # Use mode="elements" to preserve table structure in Word docs
+                loader = UnstructuredWordDocumentLoader(fpath, mode="elements")
+            elif ext in [".txt", ".md"]:
+                loader = TextLoader(fpath)
+            elif ext == ".csv":
+                loader = CSVLoader(fpath)
+            else:
+                print(f"[load_documents] Skipping unsupported file type: {fpath}")
+                continue
+
+            loaded = loader.load()
             docs.append(loaded)
+            print(f"[load_documents] Successfully loaded {fpath} ({len(loaded)} elements)")
         except Exception as e:
             print(f"[load_documents] Failed to load {fpath}: {e}")
 
@@ -184,7 +195,7 @@ def embed_documents(doc_splits: List[Any]):
             documents=doc_splits,
             collection_name="rag-chroma",
             embedding=NVIDIAEmbeddings(model=EMBEDDINGS_MODEL),
-            persist_directory="/project/data",
+            persist_directory=DATA_DIR,
         )
         return vectorstore
 
@@ -220,11 +231,13 @@ def upload_files(file_paths: List[str]):
 
 
 def _clear(
-    persist_directory: str = "/project/data",
+    persist_directory: str = None,
     collection_name: str = "rag-chroma",
     delete_all: bool = True
 ):
     """Clear the Chroma collection and optionally delete all shard folders (excluding hidden files)."""
+    if persist_directory is None:
+        persist_directory = DATA_DIR
     try:
         # Clear the collection via Chroma client
         vectorstore = Chroma(
@@ -273,7 +286,7 @@ def get_retriever():
     vectorstore = Chroma(
         collection_name="rag-chroma",
         embedding_function=NVIDIAEmbeddings(model=EMBEDDINGS_MODEL),
-        persist_directory="/project/data",
+        persist_directory=DATA_DIR,
     )
     retriever = vectorstore.as_retriever()
     return retriever
