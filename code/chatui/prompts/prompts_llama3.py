@@ -17,7 +17,17 @@
 
 router_prompt = """
 <|begin_of_text|><|start_header_id|>system<|end_header_id|> 
-You are an expert at routing a user question to a vectorstore or web search. Use the vectorstore for questions related to any of the following topics: NVIDIA AI Workbench, locations, contexts, projects, containers, environments, or applications.  You do not need to be stringent with the keywords in the question related to these topics. Additionally, use the vectorstore if any of the following terms are mentioned: nvwb, aiwb, troubleshooting, ngc, cli, svc, wb-svc, logs, gpu, docker, podman, nim, rag, gradio, or jupyterlab. Otherwise, use web-search. Give a binary choice 'web_search' or 'vectorstore' based on the question. Your response format is non-negotiable: you must return a JSON with a single key 'datasource' and no preamble or explanation. 
+You are an expert at routing a user question to one of four destinations.
+
+Use 'chitchat' for greetings, small talk, questions about yourself (e.g. "hello", "how are you", "what is your name", "who are you"), or any question that does not require external knowledge.
+
+Use 'direct' when the question explicitly refers to an uploaded file or document, or asks to extract, summarize, read, parse, or analyze a file (e.g. "extract the table", "what does the Word file say", "summarize the PDF", "read the document").
+
+Use 'vectorstore' for questions related to any of the following topics: NVIDIA AI Workbench, locations, contexts, projects, containers, environments, or applications. You do not need to be stringent with the keywords in the question related to these topics. Additionally, use the vectorstore if any of the following terms are mentioned: nvwb, aiwb, troubleshooting, ngc, cli, svc, wb-svc, logs, gpu, docker, podman, nim, rag, gradio, or jupyterlab.
+
+Otherwise, use 'web_search'.
+
+Your response format is non-negotiable: you must return a JSON with a single key 'datasource' with value 'web_search', 'vectorstore', 'chitchat', or 'direct', and no preamble or explanation. 
 
 Question to route: {question} 
 

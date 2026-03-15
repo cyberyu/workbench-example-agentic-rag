@@ -1,24 +1,9 @@
 # Create your compose file. To learn more, please visit
 # https://docs.docker.com/reference/compose-file/
-services:
-  local-nim:
-    image: nvcr.io/nim/meta/llama-3.1-8b-instruct:latest
-    runtime: nvidia
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [ gpu ]
-    ports:
-      - "8000:8000"
-    volumes:
-      - type: bind
-        source: /tmp
-        target: /opt/nim/.cache/
-    environment:
-      - NGC_API_KEY='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'
+# NOTE: The local NIM container is no longer used. The chatbot now connects to
+# LM Studio running at 192.168.1.188:1234 with model openai/gpt-oss-120b.
+# Start LM Studio, load the model, and enable the local server before running the app.
+services: {}
       
 networks:
   default:

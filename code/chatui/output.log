@@ -4,16 +4,264 @@ Running on local URL:  http://0.0.0.0:8080
 To create a public link, set `share=True` in `launch()`.
 IMPORTANT: You are using gradio version 4.15.0, however version 4.44.1 is available, please upgrade.
 --------
-[load_documents] Failed to load /tmp/gradio/1697949e267996da78cc039283aae54215502010/MSFT_FY26Q1_10Q.docx: '_Row' object has no attribute 'grid_cols_before'
-[upload_files] No documents successfully loaded.
----ROUTE QUESTION---
-Could you reanswer the question "what is the Net income in year 2025?" according to the table ITEM 1. FINANCIAL STATEMENTS INCOME STATEMENTS presented in the word document
-{'datasource': 'web_search'}
----ROUTE QUESTION TO WEB SEARCH---
----WEB SEARCH---
----GENERATE---
----CHECK HALLUCINATIONS---
----DECISION: GENERATION IS GROUNDED IN DOCUMENTS---
----GRADE GENERATION vs QUESTION---
----DECISION: GENERATION ADDRESSES QUESTION---
+[render_pages] Rendered 64 pages to /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images
+[_load_docx_direct] Extracted text from 64 PDF pages
+[_load_docx_direct] table 0 'FORM 10-Q' → page 0
+[_load_docx_direct] table 1 'MICROSOFT CORPORATION' → page 0
+[_load_docx_direct] table 2 'www.microsoft.com/investor' → page 0
+[_load_docx_direct] table 3 'Indicate by check mark whether the regis' → page 0
+[_load_docx_direct] table 4 'Indicate the number of shares outstandin' → page 0
+[_load_docx_direct] table 5 'INDEX' → page 1
+[_load_docx_direct] table 6 'INCOME STATEMENTS' → page 2
+[_load_docx_direct] table 7 'COMPREHENSIVE INCOME STATEMENTS' → page 3
+[_load_docx_direct] table 8 'BALANCE SHEETS' → page 4
+[_load_docx_direct] table 9 'CASH FLOWS STATEMENTS' → page 5
+[_load_docx_direct] table 10 'STOCKHOLDERS’ EQUITY STATEMENTS' → page 6
+[_load_docx_direct] table 11 'The components of basic and diluted EPS ' → page 10
+[_load_docx_direct] table 12 'The components of other income (expense)' → page 10
+[_load_docx_direct] table 13 'Net recognized gains (losses) on debt in' → page 10
+[_load_docx_direct] table 14 'Net recognized gains (losses) on equity ' → page 11
+[_load_docx_direct] table 15 'The components of investments were as fo' → page 11
+[_load_docx_direct] table 16 '' → page 12
+[_load_docx_direct] table 17 'Debt investments with continuous unreali' → page 13
+[_load_docx_direct] table 18 '' → page 13
+[_load_docx_direct] table 19 'The following table outlines maturities ' → page 13
+[_load_docx_direct] table 20 'The following table presents the notiona' → page 14
+[_load_docx_direct] table 21 'The following table presents our derivat' → page 15
+[_load_docx_direct] table 22 'The following table presents the fair va' → page 15
+[_load_docx_direct] table 23 'Gains (losses) on derivative instruments' → page 16
+[_load_docx_direct] table 24 'Gains (losses), net of tax, on derivativ' → page 16
+[_load_docx_direct] table 25 'The components of property and equipment' → page 16
+[_load_docx_direct] table 26 'Changes in the carrying amount of goodwi' → page 17
+[_load_docx_direct] table 27 'The components of intangible assets, all' → page 17
+[_load_docx_direct] table 28 'The following table outlines the estimat' → page 17
+[_load_docx_direct] table 29 'The components of long-term debt were as' → page 18
+[_load_docx_direct] table 30 'The following table outlines maturities ' → page 18
+[_load_docx_direct] table 31 'Unearned revenue by segment was as follo' → page 19
+[_load_docx_direct] table 32 'Changes in unearned revenue were as foll' → page 19
+[_load_docx_direct] table 33 'The components of lease expense were as ' → page 20
+[_load_docx_direct] table 34 'Supplemental cash flow information relat' → page 21
+[_load_docx_direct] table 35 'Supplemental balance sheet information r' → page 21
+[_load_docx_direct] table 36 'The following table outlines maturities ' → page 22
+[_load_docx_direct] table 37 'We repurchased the following shares of c' → page 23
+[_load_docx_direct] table 38 'Our Board of Directors declared the foll' → page 23
+[_load_docx_direct] table 39 'The following table summarizes the chang' → page 24
+[_load_docx_direct] table 40 'Segment revenue, cost of revenue, operat' → page 26
+[_load_docx_direct] table 41 'No sales to an individual customer or co' → page 27
+[_load_docx_direct] table 42 'Revenue, classified by significant produ' → page 27
+[_load_docx_direct] table 43 'Our commercial business primarily consis' → page 31
+[_load_docx_direct] table 44 'Metrics related to our Productivity and ' → page 31
+[_load_docx_direct] table 45 'Metrics related to our More Personal Com' → page 32
+[_load_docx_direct] table 46 'SUMMARY RESULTS OF OPERATIONS' → page 32
+[_load_docx_direct] table 47 'SEGMENT RESULTS OF OPERATIONS' → page 33
+[_load_docx_direct] table 48 'Research and Development' → page 35
+[_load_docx_direct] table 49 'Sales and Marketing' → page 35
+[_load_docx_direct] table 50 'General and Administrative' → page 35
+[_load_docx_direct] table 51 'The components of other income (expense)' → page 10
+[_load_docx_direct] table 52 'The following table reconciles our finan' → page 37
+[_load_docx_direct] table 53 'The following table outlines the expecte' → page 39
+[_load_docx_direct] table 54 'The following table sets forth the poten' → page 42
+[_load_docx_direct] table 55 'Following are our monthly share repurcha' → page 56
+[_load_docx_direct] table 56 'Our Board of Directors declared the foll' → page 56
+[_load_docx_direct] table 57 'ITEM 6. EXHIBITS' → page 57
+[_load_docx_direct] table 58 'Pursuant to the requirements of the Secu' → page 58
+[_load_docx_direct] table 59 'b) Any fraud, whether or not material, t' → page 60
+[_load_docx_direct] table 60 'b) Any fraud, whether or not material, t' → page 61
+[_load_docx_direct] table 61 '(2) The information contained in the Rep' → page 62
+[_load_docx_direct] table 62 '(2) The information contained in the Rep' → page 63
+[_load_docx_direct] 63/63 tables matched to pages; 26 text-only pages (no image stored)
+[table 0] 'FORM 10-Q' — 5 rows, sample: ['☒', 'QUARTERLY REPORT PURSUANT TO SECTION 13 OR 15(d) OF THE SECURITIES EXCHANGE ACT OF 1934']
+[annotate_page_image] 585 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_000_diff.png
+[verify_table] 'FORM 10-Q' → FAIL | coverage=29% in_cals_not_pdf=5 in_pdf_not_cals=188
+[table 1] 'MICROSOFT CORPORATION' — 2 rows, sample: ['Washington', '', '91-1144442']
+[annotate_page_image] 585 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_000_diff.png
+[verify_table] 'MICROSOFT CORPORATION' → FAIL | coverage=0% in_cals_not_pdf=4 in_pdf_not_cals=190
+[table 2] 'www.microsoft.com/investor' — 5 rows, sample: ['Securities registered pursuant to Section 12(b) of the Act:', '', '', '', '']
+[annotate_page_image] 585 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_000_diff.png
+[verify_table] 'www.microsoft.com/investor' → FAIL | coverage=22% in_cals_not_pdf=7 in_pdf_not_cals=188
+[table 3] 'Indicate by check mark whether the regis' — 3 rows, sample: ['Large Accelerated Filer\xa0☒', '', 'Accelerated\xa0Filer\xa0☐']
+[annotate_page_image] 585 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_000_diff.png
+[verify_table] 'Indicate by check mark whether the regis' → FAIL | coverage=0% in_cals_not_pdf=5 in_pdf_not_cals=190
+[table 4] 'Indicate the number of shares outstandin' — 2 rows, sample: ['Class', '', 'Outstanding\xa0as of\xa0October 23,\xa02025', '', '']
+[annotate_page_image] 585 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_000_diff.png
+[verify_table] 'Indicate the number of shares outstandin' → FAIL | coverage=25% in_cals_not_pdf=3 in_pdf_not_cals=189
+[table 5] 'INDEX' — 20 rows, sample: ['', '', 'Page']
+[annotate_page_image] 528 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_001_diff.png
+[verify_table] 'INDEX' → FAIL | coverage=38% in_cals_not_pdf=30 in_pdf_not_cals=90
+[table 6] 'INCOME STATEMENTS' — 25 rows, sample: ['(In millions, except per share amounts) (Unaudited)', '', '', '']
+[annotate_page_image] 228 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_002_diff.png
+[verify_table] 'INCOME STATEMENTS' → WARN | coverage=69% in_cals_not_pdf=18 in_pdf_not_cals=37
+[table 7] 'COMPREHENSIVE INCOME STATEMENTS' — 9 rows, sample: ['(In millions) (Unaudited)', '', '', '', '', '', '']
+[annotate_page_image] 48 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_003_diff.png
+[verify_table] 'COMPREHENSIVE INCOME STATEMENTS' → PASS | coverage=100% in_cals_not_pdf=0 in_pdf_not_cals=1
+[table 8] 'BALANCE SHEETS' — 41 rows, sample: ['(In millions) (Unaudited)', '', '', '']
+[annotate_page_image] 420 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_004_diff.png
+[verify_table] 'BALANCE SHEETS' → WARN | coverage=66% in_cals_not_pdf=36 in_pdf_not_cals=71
+[table 9] 'CASH FLOWS STATEMENTS' — 40 rows, sample: ['(In millions) (Unaudited)', '', '', '']
+[annotate_page_image] 275 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_005_diff.png
+[verify_table] 'CASH FLOWS STATEMENTS' → WARN | coverage=68% in_cals_not_pdf=34 in_pdf_not_cals=71
+[table 10] 'STOCKHOLDERS’ EQUITY STATEMENTS' — 21 rows, sample: ['(In millions, except per share amounts) (Unaudited)', '', '', '']
+[annotate_page_image] 224 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_006_diff.png
+[verify_table] 'STOCKHOLDERS’ EQUITY STATEMENTS' → WARN | coverage=72% in_cals_not_pdf=14 in_pdf_not_cals=41
+[table 11] 'The components of basic and diluted EPS ' — 9 rows, sample: ['(In millions, except per share amounts)', '', '', '', '', '', '']
+[annotate_page_image] 638 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_010_diff.png
+[verify_table] 'The components of basic and diluted EPS ' → WARN | coverage=73% in_cals_not_pdf=6 in_pdf_not_cals=129
+[table 12] 'The components of other income (expense)' — 9 rows, sample: ['(In millions)', '', '', '', '', '', '']
+[annotate_page_image] 638 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_010_diff.png
+[verify_table] 'The components of other income (expense)' → WARN | coverage=80% in_cals_not_pdf=5 in_pdf_not_cals=125
+[table 13] 'Net recognized gains (losses) on debt in' — 6 rows, sample: ['(In millions)', '', '', '', '', '', '']
+[annotate_page_image] 638 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_010_diff.png
+[verify_table] 'Net recognized gains (losses) on debt in' → WARN | coverage=73% in_cals_not_pdf=4 in_pdf_not_cals=134
+[table 14] 'Net recognized gains (losses) on equity ' — 6 rows, sample: ['(In millions)', '', '', '', '', '', '']
+[annotate_page_image] 741 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_011_diff.png
+[verify_table] 'Net recognized gains (losses) on equity ' → WARN | coverage=75% in_cals_not_pdf=4 in_pdf_not_cals=155
+[table 15] 'The components of investments were as fo' — 27 rows, sample: ['(In millions)', '', 'Fair\xa0Value Level', '', '', 'Adjusted Cost\xa0Basis', '', 'Unrealized Gains', '', 'Unrealized Losses', '', 'Recorded Basis', '', 'Cash\xa0and Cash Equivalents', '', 'Short-term Investments', '', 'Equity and Other Investments', '']
+[annotate_page_image] 741 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_011_diff.png
+[verify_table] 'The components of investments were as fo' → WARN | coverage=72% in_cals_not_pdf=25 in_pdf_not_cals=102
+[table 16] '' — 27 rows, sample: ['(In millions)', '', 'Fair\xa0Value Level', '', '', 'Adjusted Cost\xa0Basis', '', 'Unrealized Gains', '', 'Unrealized Losses', '', 'Recorded Basis', '', 'Cash\xa0and Cash Equivalents', '', 'Short-term Investments', '', 'Equity and Other Investments', '']
+[annotate_page_image] 686 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_012_diff.png
+[verify_table] '' → FAIL | coverage=54% in_cals_not_pdf=41 in_pdf_not_cals=179
+[table 17] 'Debt investments with continuous unreali' — 11 rows, sample: ['', '', 'Less than 12 Months', '', '', '12 Months or Greater', '', '', '', '', '', '', '', 'Total\nUnrealized\nLosses', '']
+[annotate_page_image] 1054 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_013_diff.png
+[verify_table] 'Debt investments with continuous unreali' → WARN | coverage=72% in_cals_not_pdf=12 in_pdf_not_cals=226
+[table 18] '' — 11 rows, sample: ['', '', 'Less than 12 Months', '', '', '12 Months or Greater', '', '', '', '', '', '', '', 'Total\nUnrealized\nLosses', '']
+[annotate_page_image] 1054 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_013_diff.png
+[verify_table] '' → WARN | coverage=76% in_cals_not_pdf=11 in_pdf_not_cals=222
+[table 19] 'The following table outlines maturities ' — 7 rows, sample: ['(In millions)', '', 'Adjusted Cost\xa0Basis', '', '', 'Estimated Fair\xa0Value', '']
+[annotate_page_image] 1054 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_013_diff.png
+[verify_table] 'The following table outlines maturities ' → FAIL | coverage=47% in_cals_not_pdf=10 in_pdf_not_cals=248
+[table 20] 'The following table presents the notiona' — 11 rows, sample: ['(In millions)', '', 'September\xa030, 2025', '', '', 'June\xa030, 2025', '']
+[annotate_page_image] 660 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_014_diff.png
+[verify_table] 'The following table presents the notiona' → FAIL | coverage=50% in_cals_not_pdf=13 in_pdf_not_cals=265
+[table 21] 'The following table presents our derivat' — 22 rows, sample: ['', '', 'Derivative', '', '', '', 'Derivative', '', '', 'Derivative', '', '', 'Derivative', '']
+[annotate_page_image] 660 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_015_diff.png
+[verify_table] 'The following table presents our derivat' → WARN | coverage=74% in_cals_not_pdf=17 in_pdf_not_cals=99
+[table 22] 'The following table presents the fair va' — 7 rows, sample: ['(In millions)', '', 'Level 1', '', '', '', 'Level 2', '', '', 'Level 3', '', '', 'Total', '']
+[annotate_page_image] 660 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_015_diff.png
+[verify_table] 'The following table presents the fair va' → WARN | coverage=71% in_cals_not_pdf=6 in_pdf_not_cals=132
+[table 23] 'Gains (losses) on derivative instruments' — 13 rows, sample: ['(In millions)', '', '', '', '', '', '']
+[annotate_page_image] 567 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_016_diff.png
+[verify_table] 'Gains (losses) on derivative instruments' → FAIL | coverage=58% in_cals_not_pdf=11 in_pdf_not_cals=132
+[table 24] 'Gains (losses), net of tax, on derivativ' — 5 rows, sample: ['(In millions)', '', '', '']
+[annotate_page_image] 567 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_016_diff.png
+[verify_table] 'Gains (losses), net of tax, on derivativ' → FAIL | coverage=56% in_cals_not_pdf=4 in_pdf_not_cals=142
+[table 25] 'The components of property and equipment' — 10 rows, sample: ['(In millions)', '']
+[annotate_page_image] 567 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_016_diff.png
+[verify_table] 'The components of property and equipment' → WARN | coverage=70% in_cals_not_pdf=8 in_pdf_not_cals=128
+[table 26] 'Changes in the carrying amount of goodwi' — 5 rows, sample: ['(In millions)', '', 'June 30, 2025', '', '', 'Acquisitions', '', '', 'Other', '', '', 'September\xa030, 2025', '']
+[annotate_page_image] 868 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_017_diff.png
+[verify_table] 'Changes in the carrying amount of goodwi' → FAIL | coverage=55% in_cals_not_pdf=10 in_pdf_not_cals=225
+[table 27] 'The components of intangible assets, all' — 7 rows, sample: ['(In millions)', '', 'Gross\nCarrying\nAmount', '', '', 'Accumulated\nAmortization', '', '', 'Net\nCarrying\nAmount', '', '', 'Gross\nCarrying\nAmount', '', 'Accumulated\nAmortization', '', '', 'Net\nCarrying\nAmount', '']
+[annotate_page_image] 868 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_017_diff.png
+[verify_table] 'The components of intangible assets, all' → WARN | coverage=67% in_cals_not_pdf=13 in_pdf_not_cals=211
+[table 28] 'The following table outlines the estimat' — 9 rows, sample: ['(In millions)', '', '', '']
+[annotate_page_image] 868 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_017_diff.png
+[verify_table] 'The following table outlines the estimat' → WARN | coverage=94% in_cals_not_pdf=1 in_pdf_not_cals=222
+[table 29] 'The components of long-term debt were as' — 21 rows, sample: ['(In millions, issuance by calendar year)', '', 'Maturities (calendar\xa0year)', '', 'Stated Interest Rate', '', '', 'Effective Interest Rate', '', 'September\xa030, 2025', '', '', 'June 30, 2025', '']
+[annotate_page_image] 744 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_018_diff.png
+[verify_table] 'The components of long-term debt were as' → FAIL | coverage=33% in_cals_not_pdf=70 in_pdf_not_cals=194
+[table 30] 'The following table outlines maturities ' — 9 rows, sample: ['(In millions)', '', '', '', '']
+[annotate_page_image] 744 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_018_diff.png
+[verify_table] 'The following table outlines maturities ' → WARN | coverage=67% in_cals_not_pdf=5 in_pdf_not_cals=218
+[table 31] 'Unearned revenue by segment was as follo' — 6 rows, sample: ['(In millions)', '', '', '', '', '', '']
+[annotate_page_image] 660 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_019_diff.png
+[verify_table] 'Unearned revenue by segment was as follo' → WARN | coverage=73% in_cals_not_pdf=4 in_pdf_not_cals=230
+[table 32] 'Changes in unearned revenue were as foll' — 6 rows, sample: ['(In millions)', '', '', '']
+[annotate_page_image] 660 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_019_diff.png
+[verify_table] 'Changes in unearned revenue were as foll' → FAIL | coverage=50% in_cals_not_pdf=5 in_pdf_not_cals=236
+[table 33] 'The components of lease expense were as ' — 7 rows, sample: ['(In millions)', '', '', '', '', '', '', '', '']
+[annotate_page_image] 308 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_020_diff.png
+[verify_table] 'The components of lease expense were as ' → WARN | coverage=65% in_cals_not_pdf=6 in_pdf_not_cals=97
+[table 34] 'Supplemental cash flow information relat' — 9 rows, sample: ['(In millions)', '', '', '']
+[annotate_page_image] 364 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_021_diff.png
+[verify_table] 'Supplemental cash flow information relat' → WARN | coverage=71% in_cals_not_pdf=6 in_pdf_not_cals=89
+[table 35] 'Supplemental balance sheet information r' — 20 rows, sample: ['(In millions, except lease term and discount rate)', '', '', '', '', '', '']
+[annotate_page_image] 364 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_021_diff.png
+[verify_table] 'Supplemental balance sheet information r' → WARN | coverage=64% in_cals_not_pdf=15 in_pdf_not_cals=77
+[table 36] 'The following table outlines maturities ' — 11 rows, sample: ['(In millions)', '', '', '', '', '', '']
+[annotate_page_image] 847 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_022_diff.png
+[verify_table] 'The following table outlines maturities ' → FAIL | coverage=52% in_cals_not_pdf=15 in_pdf_not_cals=235
+[table 37] 'We repurchased the following shares of c' — 3 rows, sample: ['(In millions)', '', 'Shares', '', 'Amount', '', '', 'Shares', '', 'Amount', '']
+[annotate_page_image] 490 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_023_diff.png
+[verify_table] 'We repurchased the following shares of c' → WARN | coverage=82% in_cals_not_pdf=2 in_pdf_not_cals=169
+[table 38] 'Our Board of Directors declared the foll' — 5 rows, sample: ['Declaration Date', '', '', 'Record Date', '', '', '', 'Payment\xa0Date', '', '', '', 'Dividend Per\xa0Share', '', '', '', 'Amount', '']
+[annotate_page_image] 490 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_023_diff.png
+[verify_table] 'Our Board of Directors declared the foll' → FAIL | coverage=50% in_cals_not_pdf=9 in_pdf_not_cals=169
+[table 39] 'The following table summarizes the chang' — 23 rows, sample: ['(In millions)', '', '']
+[annotate_page_image] 423 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_024_diff.png
+[verify_table] 'The following table summarizes the chang' → WARN | coverage=69% in_cals_not_pdf=15 in_pdf_not_cals=71
+[table 40] 'Segment revenue, cost of revenue, operat' — 22 rows, sample: ['(In millions)', '', '', '', '', '', '', '', '']
+[annotate_page_image] 702 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_026_diff.png
+[verify_table] 'Segment revenue, cost of revenue, operat' → FAIL | coverage=50% in_cals_not_pdf=22 in_pdf_not_cals=195
+[table 41] 'No sales to an individual customer or co' — 5 rows, sample: ['(In millions)', '', '', '', '', '', '']
+[annotate_page_image] 780 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_027_diff.png
+[verify_table] 'No sales to an individual customer or co' → FAIL | coverage=46% in_cals_not_pdf=7 in_pdf_not_cals=309
+[table 42] 'Revenue, classified by significant produ' — 13 rows, sample: ['(In millions)', '', '', '', '', '', '']
+[annotate_page_image] 780 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_027_diff.png
+[verify_table] 'Revenue, classified by significant produ' → FAIL | coverage=46% in_cals_not_pdf=20 in_pdf_not_cals=298
+[table 43] 'Our commercial business primarily consis' — 3 rows, sample: ['Commercial remaining performance obligation', '', 'Commercial portion of revenue allocated to remaining performance obligations, which includes unearned revenue and amounts that will be invoiced and recognized as revenue in future periods']
+[annotate_page_image] 3 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_031_diff.png
+[verify_table] 'Our commercial business primarily consis' → FAIL | coverage=0% in_cals_not_pdf=6 in_pdf_not_cals=3
+[table 44] 'Metrics related to our Productivity and ' — 6 rows, sample: ['Microsoft 365 Commercial cloud revenue growth', '', 'Revenue from Microsoft 365 Commercial subscriptions, comprising Microsoft 365 Commercial, Enterprise Mobility + Security, the cloud portion of Windows Commercial, the per-user portion of Power BI, Exchange, SharePoint, Microsoft Teams, Microsoft 365 Security and Compliance, and Microsoft 365 Copilot']
+[annotate_page_image] 3 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_031_diff.png
+[verify_table] 'Metrics related to our Productivity and ' → FAIL | coverage=0% in_cals_not_pdf=12 in_pdf_not_cals=3
+[table 45] 'Metrics related to our More Personal Com' — 3 rows, sample: ['Windows OEM and Devices revenue growth', '', 'Revenue from sales of Windows Pro and non-Pro licenses sold through the OEM channel and sales of first-party Devices, including Surface and PC accessories']
+[annotate_page_image] 671 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_032_diff.png
+[verify_table] 'Metrics related to our More Personal Com' → FAIL | coverage=0% in_cals_not_pdf=6 in_pdf_not_cals=305
+[table 46] 'SUMMARY RESULTS OF OPERATIONS' — 9 rows, sample: ['(In millions, except percentages and per share amounts)', '', 'Three\xa0Months\xa0Ended September\xa030,', '', '', 'Percentage Change', '']
+[annotate_page_image] 671 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_032_diff.png
+[verify_table] 'SUMMARY RESULTS OF OPERATIONS' → WARN | coverage=75% in_cals_not_pdf=8 in_pdf_not_cals=281
+[table 47] 'SEGMENT RESULTS OF OPERATIONS' — 22 rows, sample: ['(In millions, except percentages)', '', 'Three Months Ended September 30,', '', '', 'Percentage\nChange', '']
+[annotate_page_image] 4 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_033_diff.png
+[verify_table] 'SEGMENT RESULTS OF OPERATIONS' → FAIL | coverage=0% in_cals_not_pdf=57 in_pdf_not_cals=4
+[table 48] 'Research and Development' — 4 rows, sample: ['(In millions, except percentages)', '', 'Three\xa0Months\xa0Ended September\xa030,', '', '', 'Percentage\nChange', '']
+[annotate_page_image] 480 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_035_diff.png
+[verify_table] 'Research and Development' → WARN | coverage=62% in_cals_not_pdf=5 in_pdf_not_cals=133
+[table 49] 'Sales and Marketing' — 4 rows, sample: ['(In millions, except percentages)', '', 'Three\xa0Months\xa0Ended\n September\xa030,', '', '', 'Percentage\nChange', '']
+[annotate_page_image] 480 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_035_diff.png
+[verify_table] 'Sales and Marketing' → WARN | coverage=67% in_cals_not_pdf=4 in_pdf_not_cals=133
+[table 50] 'General and Administrative' — 4 rows, sample: ['(In millions, except percentages)', '', 'Three\xa0Months\xa0Ended\nSeptember\xa030,', '', '', 'Percentage\nChange', '']
+[annotate_page_image] 480 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_035_diff.png
+[verify_table] 'General and Administrative' → WARN | coverage=62% in_cals_not_pdf=5 in_pdf_not_cals=133
+[table 51] 'The components of other income (expense)' — 9 rows, sample: ['(In millions)', '', '', '', '', '', '']
+[annotate_page_image] 638 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_010_diff.png
+[verify_table] 'The components of other income (expense)' → WARN | coverage=80% in_cals_not_pdf=5 in_pdf_not_cals=125
+[table 52] 'The following table reconciles our finan' — 17 rows, sample: ['(In millions, except percentages and per share amounts)', '', 'Three\xa0Months\xa0Ended\nSeptember\xa030,', '', 'Percentage\nChange', '']
+[annotate_page_image] 496 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_037_diff.png
+[verify_table] 'The following table reconciles our finan' → FAIL | coverage=23% in_cals_not_pdf=30 in_pdf_not_cals=256
+[table 53] 'The following table outlines the expecte' — 8 rows, sample: ['(In millions)', '', '', '']
+[annotate_page_image] 540 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_039_diff.png
+[verify_table] 'The following table outlines the expecte' → WARN | coverage=79% in_cals_not_pdf=3 in_pdf_not_cals=252
+[table 54] 'The following table sets forth the poten' — 7 rows, sample: ['(In millions)', '', '', '', '', '', '', '', '', '']
+[annotate_page_image] 583 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_042_diff.png
+[verify_table] 'The following table sets forth the poten' → WARN | coverage=62% in_cals_not_pdf=8 in_pdf_not_cals=224
+[table 55] 'Following are our monthly share repurcha' — 6 rows, sample: ['Period', '', 'Total\xa0Number\nof\xa0Shares\nPurchased', '', '', 'Average Price\xa0Paid\nPer\xa0Share', '', '', 'Total\xa0Number\xa0of\nShares\xa0Purchased\xa0as\nPart\xa0of\xa0Publicly\nAnnounced Plans\nor\xa0Programs', '', '', 'Approximate\xa0Dollar\xa0Value\xa0of Shares\xa0That\xa0May\xa0Yet\xa0Be Purchased\xa0Under\xa0the\xa0Plans\nor\xa0Programs', '']
+[annotate_page_image] 423 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_056_diff.png
+[verify_table] 'Following are our monthly share repurcha' → FAIL | coverage=58% in_cals_not_pdf=8 in_pdf_not_cals=132
+[table 56] 'Our Board of Directors declared the foll' — 3 rows, sample: ['Declaration Date', '', '', 'Record Date', '', '', '', 'Payment\xa0Date', '', '', '', 'Dividend Per\xa0Share', '', '', '', 'Amount', '']
+[annotate_page_image] 423 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_056_diff.png
+[verify_table] 'Our Board of Directors declared the foll' → FAIL | coverage=55% in_cals_not_pdf=5 in_pdf_not_cals=137
+[table 57] 'ITEM 6. EXHIBITS' — 10 rows, sample: ['', '', '', '', '', 'Incorporated by Reference', '']
+[annotate_page_image] 205 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_057_diff.png
+[verify_table] 'ITEM 6. EXHIBITS' → FAIL | coverage=40% in_cals_not_pdf=15 in_pdf_not_cals=57
+[table 58] 'Pursuant to the requirements of the Secu' — 5 rows, sample: ['MICROSOFT CORPORATION']
+[annotate_page_image] 11 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_058_diff.png
+[verify_table] 'Pursuant to the requirements of the Secu' → FAIL | coverage=0% in_cals_not_pdf=5 in_pdf_not_cals=8
+[table 59] 'b) Any fraud, whether or not material, t' — 3 rows, sample: ['/s/ SATYA NADELLA']
+[annotate_page_image] 486 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_060_diff.png
+[verify_table] 'b) Any fraud, whether or not material, t' → WARN | coverage=67% in_cals_not_pdf=1 in_pdf_not_cals=242
+[table 60] 'b) Any fraud, whether or not material, t' — 3 rows, sample: ['/s/ AMY E. HOOD']
+[annotate_page_image] 495 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_061_diff.png
+[verify_table] 'b) Any fraud, whether or not material, t' → WARN | coverage=67% in_cals_not_pdf=1 in_pdf_not_cals=244
+[table 61] '(2) The information contained in the Rep' — 3 rows, sample: ['/s/ SATYA NADELLA']
+[annotate_page_image] 234 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_062_diff.png
+[verify_table] '(2) The information contained in the Rep' → WARN | coverage=67% in_cals_not_pdf=1 in_pdf_not_cals=89
+[table 62] '(2) The information contained in the Rep' — 3 rows, sample: ['/s/ AMY E. HOOD']
+[annotate_page_image] 216 cells annotated → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_images/page_063_diff.png
+[verify_table] '(2) The information contained in the Rep' → WARN | coverage=67% in_cals_not_pdf=1 in_pdf_not_cals=83
+[_load_docx_direct] Loaded 63 tables, 64 page images
+[load_documents] Successfully loaded /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/MSFT_FY26Q1_10Q.docx (615 elements)
+[upload_files] Saved table catalog (63 tables) → /home/shiyu/Documents/dgx-spark-playbooks/workbench-example-agentic-rag/data/table_catalog.json
+[split_documents] Splitting 615 docs with chunk size 250, overlap 0
+[embed_documents] Embedding 977 chunks using model: all-MiniLM-L6-v2
 Keyboard interruption in main thread... closing server.

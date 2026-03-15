@@ -181,6 +181,14 @@ _LOCAL_CSS = """
     margin-bottom: 0.5em;
     border-radius: 2px;
 }
+#tb-cals-xml {
+    min-height: 1440px !important;
+    overflow-y: auto !important;
+}
+#tb-cals-xml > div {
+    min-height: 1440px !important;
+    overflow-y: auto !important;
+}
 """
 
 import os
@@ -213,11 +221,13 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
 
         """ Keep state of which queries need to use NIMs vs API Endpoints. """
         
-        router_use_nim = gr.State(False)
-        retrieval_use_nim = gr.State(False)
-        generator_use_nim = gr.State(False)
-        hallucination_use_nim = gr.State(False)
-        answer_use_nim = gr.State(False)
+        router_use_nim = gr.State(True)
+        retrieval_use_nim = gr.State(True)
+        generator_use_nim = gr.State(True)
+        hallucination_use_nim = gr.State(True)
+        answer_use_nim = gr.State(True)
+        table_refs_state = gr.State([])   # stores selected table refs for the optimize agent
+        all_tables_state = gr.State([])   # stores full table catalog after document upload
 
         """ Build the Chat Application. """
         
@@ -230,6 +240,52 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
                 with gr.Row(equal_height=True):
                     with gr.Column(min_width=350):
                         chatbot = gr.Chatbot(show_label=False, height=500)
+
+                # Table page image viewer — shown only when direct document access finds table images
+                with gr.Row(equal_height=True):
+                    table_gallery = gr.Gallery(
+                        label="Source Table Page(s)",
+                        show_label=True,
+                        visible=False,
+                        columns=1,
+                        rows=1,
+                        height=500,
+                        object_fit="contain",
+                        elem_id="table-gallery",
+                    )
+
+                # Inspection report — shown only for direct table queries
+                with gr.Row(equal_height=True):
+                    inspection_box = gr.JSON(
+                        label="Extraction Inspection Report (pdfplumber vs python-docx)",
+                        visible=False,
+                        elem_id="inspection-box",
+                    )
+
+                # Optimize button — appears after a direct table query
+                with gr.Row(equal_height=True):
+                    optimize_btn = gr.Button(
+                        "⚙️ Optimize The Extraction",
+                        visible=False,
+                        variant="secondary",
+                    )
+
+                # Optimization agent round-by-round report
+                with gr.Row(equal_height=True):
+                    optimization_box = gr.JSON(
+                        label="Optimization Agent — Strategy Comparison",
+                        visible=False,
+                        elem_id="optimization-box",
+                    )
+
+                # CALS XML view — shown when a direct table query returns CALS XML
+                with gr.Row(equal_height=True):
+                    xml_box = gr.Code(
+                        label="CALS XML (XPP-ready)",
+                        visible=False,
+                        lines=30,
+                        elem_id="cals-xml-box",
+                    )
 
                 # Message box for user input
                 with gr.Row(equal_height=True):
@@ -351,9 +407,9 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
                             ########################
                             router_btn = gr.Button("Router", variant="sm")
                             with gr.Group(visible=False) as group_router:
-                                with gr.Tabs(selected=0) as router_tabs:
+                                with gr.Tabs(selected=1) as router_tabs:
                                     with gr.TabItem("API Endpoints", id=0) as router_api:
-                                        router_mode_banner = gr.Markdown(value="💻 **Using API Endpoint**", elem_classes=["mode-banner"])
+                                        router_mode_banner = gr.Markdown(value="🛠️ **Using Self-Hosted Endpoint**", elem_classes=["mode-banner"])
                                         model_router = gr.Dropdown(model_list, 
                                                                 value=model_list[0],
                                                                 label="Select a Model",
@@ -380,23 +436,23 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
                                         
                                         with gr.Row():
                                             nim_router_ip = gr.Textbox(
-                                                value = "agentic-rag-local-nim-1",
+                                                value = "localhost",
                                                 label=HOST_NAME,
                                                 info="Local microservice OR IP address running a remote microservice",
                                                 elem_id="rag-inputs",
                                                 scale=2
                                             )
                                             nim_router_port = gr.Textbox(
-                                                placeholder="8000",
+                                                value="1234",
                                                 label=HOST_PORT,
-                                                info="Optional, (default: 8000)",
+                                                info="LM Studio default: 1234",
                                                 elem_id="rag-inputs",
                                                 scale=1
                                             )
                                         nim_router_id = gr.Textbox(
-                                            placeholder = "meta/llama-3.1-8b-instruct",
+                                            value = "openai/gpt-oss-120b",
                                             label=HOST_MODEL,
-                                            info="If none specified, defaults to: meta/llama-3.1-8b-instruct",
+                                            info="LM Studio model identifier",
                                             elem_id="rag-inputs",
                                             interactive=True
                                         )
@@ -426,8 +482,8 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
                             ##################################
                             retrieval_btn = gr.Button("Retrieval Grader", variant="sm")
                             with gr.Group(visible=False) as group_retrieval:
-                                with gr.Tabs(selected=0) as retrieval_tabs:
-                                    retrieval_mode_banner = gr.Markdown(value="💻 **Using API Endpoint**", elem_classes=["mode-banner"])
+                                with gr.Tabs(selected=1) as retrieval_tabs:
+                                    retrieval_mode_banner = gr.Markdown(value="🛠️ **Using Self-Hosted Endpoint**", elem_classes=["mode-banner"])
 
                                     with gr.TabItem("API Endpoints", id=0) as retrieval_api:
                                         model_retrieval = gr.Dropdown(model_list, 
@@ -455,23 +511,23 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
                                         
                                         with gr.Row():
                                             nim_retrieval_ip = gr.Textbox(
-                                                value = "agentic-rag-local-nim-1",
+                                                value = "localhost",
                                                 label=HOST_NAME,
                                                 info="Local microservice OR IP address running a remote microservice",
                                                 elem_id="rag-inputs",
                                                 scale=2
                                             )
                                             nim_retrieval_port = gr.Textbox(
-                                                placeholder="8000",
+                                                value="1234",
                                                 label=HOST_PORT,
-                                                info="Optional, (default: 8000)",
+                                                info="LM Studio default: 1234",
                                                 elem_id="rag-inputs",
                                                 scale=1
                                             )
                                         nim_retrieval_id = gr.Textbox(
-                                            placeholder = "meta/llama-3.1-8b-instruct",
+                                            value = "openai/gpt-oss-120b",
                                             label=HOST_MODEL,
-                                            info="If none specified, defaults to: meta/llama-3.1-8b-instruct",
+                                            info="LM Studio model identifier",
                                             elem_id="rag-inputs",
                                             interactive=True
                                         )                                        
@@ -501,8 +557,8 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
                             ###########################
                             generator_btn = gr.Button("Generator", variant="sm")
                             with gr.Group(visible=False) as group_generator:
-                                with gr.Tabs(selected=0) as generator_tabs:
-                                    generator_mode_banner = gr.Markdown(value="💻 **Using API Endpoint**", elem_classes=["mode-banner"])
+                                with gr.Tabs(selected=1) as generator_tabs:
+                                    generator_mode_banner = gr.Markdown(value="🛠️ **Using Self-Hosted Endpoint**", elem_classes=["mode-banner"])
                                     with gr.TabItem("API Endpoints", id=0) as generator_api:
                                         model_generator = gr.Dropdown(model_list, 
                                                                     value=model_list[0],
@@ -529,23 +585,23 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
                                         
                                         with gr.Row():
                                             nim_generator_ip = gr.Textbox(
-                                                value = "agentic-rag-local-nim-1",
+                                                value = "localhost",
                                                 label=HOST_NAME,
                                                 info="Local microservice OR IP address running a remote microservice",
                                                 elem_id="rag-inputs",
                                                 scale=2
                                             )
                                             nim_generator_port = gr.Textbox(
-                                                placeholder="8000",
+                                                value="1234",
                                                 label=HOST_PORT,
-                                                info="Optional, (default: 8000)",
+                                                info="LM Studio default: 1234",
                                                 elem_id="rag-inputs",
                                                 scale=1
                                             )
                                         nim_generator_id = gr.Textbox(
-                                            placeholder = "meta/llama-3.1-8b-instruct",
+                                            value = "openai/gpt-oss-120b",
                                             label=HOST_MODEL,
-                                            info="If none specified, defaults to: meta/llama-3.1-8b-instruct",
+                                            info="LM Studio model identifier",
                                             elem_id="rag-inputs",
                                             interactive=True
                                         )
@@ -575,8 +631,8 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
                             ######################################
                             hallucination_btn = gr.Button("Hallucination Grader", variant="sm")
                             with gr.Group(visible=False) as group_hallucination:
-                                with gr.Tabs(selected=0) as hallucination_tabs:
-                                    hallucination_mode_banner = gr.Markdown(value="💻 **Using API Endpoint**", elem_classes=["mode-banner"])
+                                with gr.Tabs(selected=1) as hallucination_tabs:
+                                    hallucination_mode_banner = gr.Markdown(value="🛠️ **Using Self-Hosted Endpoint**", elem_classes=["mode-banner"])
                                     with gr.TabItem("API Endpoints", id=0) as hallucination_api:
                                         model_hallucination = gr.Dropdown(model_list, 
                                                                                 value=model_list[0],
@@ -603,23 +659,23 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
                                         
                                         with gr.Row():
                                             nim_hallucination_ip = gr.Textbox(
-                                                value = "agentic-rag-local-nim-1",
+                                                value = "localhost",
                                                 label=HOST_NAME,
                                                 info="Local microservice OR IP address running a remote microservice",
                                                 elem_id="rag-inputs",
                                                 scale=2
                                             )
                                             nim_hallucination_port = gr.Textbox(
-                                                placeholder="8000",
+                                                value="1234",
                                                 label=HOST_PORT,
-                                                info="Optional, (default: 8000)",
+                                                info="LM Studio default: 1234",
                                                 elem_id="rag-inputs",
                                                 scale=1
                                             )
                                         nim_hallucination_id = gr.Textbox(
-                                            placeholder = "meta/llama-3.1-8b-instruct",
+                                            value = "openai/gpt-oss-120b",
                                             label=HOST_MODEL,
-                                            info="If none specified, defaults to: meta/llama-3.1-8b-instruct",
+                                            info="LM Studio model identifier",
                                             elem_id="rag-inputs",
                                             interactive=True
                                         )
@@ -649,8 +705,8 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
                             ###############################
                             answer_btn = gr.Button("Answer Grader", variant="sm")
                             with gr.Group(visible=False) as group_answer:
-                                with gr.Tabs(selected=0) as answer_tabs:
-                                    answer_mode_banner = gr.Markdown(value="💻 **Using API Endpoint**", elem_classes=["mode-banner"])
+                                with gr.Tabs(selected=1) as answer_tabs:
+                                    answer_mode_banner = gr.Markdown(value="🛠️ **Using Self-Hosted Endpoint**", elem_classes=["mode-banner"])
                                     with gr.TabItem("API Endpoints", id=0) as answer_api:
                                         model_answer = gr.Dropdown(model_list, 
                                                                         value=model_list[0],
@@ -677,23 +733,23 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
                                         
                                         with gr.Row():
                                             nim_answer_ip = gr.Textbox(
-                                                value = "agentic-rag-local-nim-1",
+                                                value = "localhost",
                                                 label=HOST_NAME,
                                                 info="Local microservice OR IP address running a remote microservice",
                                                 elem_id="rag-inputs",
                                                 scale=2
                                             )
                                             nim_answer_port = gr.Textbox(
-                                                placeholder="8000",
+                                                value="1234",
                                                 label=HOST_PORT,
-                                                info="Optional, (default: 8000)",
+                                                info="LM Studio default: 1234",
                                                 elem_id="rag-inputs",
                                                 scale=1
                                             )
                                         nim_answer_id = gr.Textbox(
-                                            placeholder = "meta/llama-3.1-8b-instruct",
+                                            value = "openai/gpt-oss-120b",
                                             label=HOST_MODEL,
-                                            info="If none specified, defaults to: meta/llama-3.1-8b-instruct",
+                                            info="LM Studio model identifier",
                                             elem_id="rag-inputs",
                                             interactive=True
                                             )   
@@ -746,7 +802,7 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
                             with gr.TabItem("Files", id=1) as pdf_tab:
                                 docs_upload = gr.File(interactive=True, 
                                                           show_label=False, 
-                                                          file_types=[".pdf", ".txt", ".csv", ".md"], 
+                                                          file_types=[".pdf", ".txt", ".csv", ".md", ".docx"], 
                                                           file_count="multiple")
                                 docs_clear = gr.Button(value="Clear Context")
     
@@ -774,6 +830,69 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
                     # Fifth tab item is for collapsing the entire settings pane for readability. 
                     with gr.TabItem("Hide All Settings", id=4) as hide_all_settings:
                         gr.Markdown("")
+
+        # ── TABLE BROWSER ─────────────────────────────────────────────────────
+        # Full-width section, hidden until a document with tables is uploaded.
+        with gr.Row(visible=False) as table_browser_section:
+            with gr.Column():
+                gr.Markdown("## Table Browser")
+                gr.Markdown(
+                    "Select a table — click any cell in the **Rendered CALS XML** panel "
+                    "to jump to the corresponding `<entry>` in the **CALS XML** panel."
+                )
+
+                table_selector = gr.Radio(
+                    choices=[],
+                    label="Tables in uploaded document(s)",
+                    interactive=True,
+                    type="index",
+                )
+
+                gr.HTML('<hr style="border:1px solid #ccc; margin:10px 0;">')
+
+                # Side-by-side: Rendered CALS XML (left) | CALS XML source (right)
+                with gr.Row(equal_height=True):
+                    with gr.Column(scale=1):
+                        gr.Markdown("**Rendered CALS XML** — click a cell to highlight it in the XML panel ➜")
+                        tb_cals_html = gr.HTML(
+                            elem_id="tb-cals-html",
+                        )
+                    with gr.Column(scale=1):
+                        gr.Markdown("**CALS XML (XPP-ready)**")
+                        tb_cals_xml = gr.HTML(
+                            elem_id="tb-cals-xml",
+                        )
+
+                gr.HTML('<hr style="border:1px solid #ccc; margin:10px 0;">')
+
+                # Secondary row (collapsed by default via Accordion)
+                with gr.Accordion("Plain Text / Inspection Report / Page Images", open=False):
+                    with gr.Row(equal_height=False):
+                        tb_plain_text = gr.Code(
+                            label="Extracted Plain Text",
+                            lines=20,
+                            scale=1,
+                            elem_id="tb-plain-text",
+                        )
+                        tb_inspection = gr.JSON(
+                            label="Extraction Inspection Report",
+                            scale=1,
+                            elem_id="tb-inspection",
+                        )
+                    with gr.Row(equal_height=True):
+                        tb_orig_img = gr.Image(
+                            label="Original PDF Page",
+                            show_label=True,
+                            scale=1,
+                            elem_id="tb-orig-img",
+                        )
+                        tb_diff_img = gr.Image(
+                            label="Annotated Diff",
+                            show_label=True,
+                            scale=1,
+                            elem_id="tb-diff-img",
+                        )
+        # ── END TABLE BROWSER ─────────────────────────────────────────────────
 
         page.load(logger.read_logs, None, logs, every=1)
 
@@ -1058,13 +1177,30 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
             progress(0.25, desc="Initializing Task")
             time.sleep(0.75)
             progress(0.5, desc="Uploading Docs")
-            database.upload_files(files)
-            progress(0.75, desc="Cleaning Up")
-            time.sleep(0.75)
+            _vs, table_catalog = database.upload_files(files)
+            progress(0.75, desc="Building Table Browser")
+
+            # Build radio choices: "[N] Title" or "[N] Page P"
+            choices = []
+            for i, t in enumerate(table_catalog):
+                title   = (t.get("title") or "").strip()
+                pg      = t.get("page_idx", -1)
+                if title:
+                    label = f"[{i + 1}] {title}"
+                elif pg >= 0:
+                    label = f"[{i + 1}] Page {pg + 1}"
+                else:
+                    label = f"[{i + 1}] Table {i + 1}"
+                choices.append(label)
+
+            time.sleep(0.5)
             return {
-                url_docs_clear: gr.update(value="Clear Docs", variant="secondary", interactive=True),
-                docs_clear: gr.update(value="Clear Docs", variant="secondary", interactive=True),
-                agentic_flow: gr.update(visible=True),
+                url_docs_clear:       gr.update(value="Clear Docs", variant="secondary", interactive=True),
+                docs_clear:           gr.update(value="Clear Docs", variant="secondary", interactive=True),
+                agentic_flow:         gr.update(visible=True),
+                all_tables_state:     table_catalog,
+                table_selector:       gr.update(choices=choices, value=None),
+                table_browser_section: gr.update(visible=bool(table_catalog)),
             }
 
         def _upload_documents(docs: str, progress=gr.Progress()):
@@ -1098,17 +1234,72 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
             progress(0.75, desc="Cleaning Up")
             time.sleep(0.75)
             return {
-                url_docs_upload: gr.update(value="Add to Context", variant="secondary", interactive=True),
-                url_docs_clear: gr.update(value="Context Cleared", variant="primary", interactive=False),
-                docs_upload: gr.update(value=None),
-                docs_clear: gr.update(value="Context Cleared", variant="primary", interactive=False),
-                agentic_flow: gr.update(visible=True),
+                url_docs_upload:       gr.update(value="Add to Context", variant="secondary", interactive=True),
+                url_docs_clear:        gr.update(value="Context Cleared", variant="primary", interactive=False),
+                docs_upload:           gr.update(value=None),
+                docs_clear:            gr.update(value="Context Cleared", variant="primary", interactive=False),
+                agentic_flow:          gr.update(visible=True),
+                all_tables_state:      [],
+                table_selector:        gr.update(choices=[], value=None),
+                table_browser_section: gr.update(visible=False),
             }
 
         url_docs_upload.click(_upload_documents, [url_docs], [url_docs_upload, url_docs_clear, docs_clear, agentic_flow])
-        url_docs_clear.click(_clear_documents, [], [url_docs_upload, url_docs_clear, docs_upload, docs_clear, agentic_flow])
-        docs_upload.upload(_upload_documents_files, [docs_upload], [url_docs_clear, docs_clear, agentic_flow])
-        docs_clear.click(_clear_documents, [], [url_docs_upload, url_docs_clear, docs_upload, docs_clear, agentic_flow])
+        url_docs_clear.click(_clear_documents, [], [url_docs_upload, url_docs_clear, docs_upload, docs_clear, agentic_flow, all_tables_state, table_selector, table_browser_section])
+        docs_upload.upload(_upload_documents_files, [docs_upload], [url_docs_clear, docs_clear, agentic_flow, all_tables_state, table_selector, table_browser_section])
+        docs_clear.click(_clear_documents, [], [url_docs_upload, url_docs_clear, docs_upload, docs_clear, agentic_flow, all_tables_state, table_selector, table_browser_section])
+
+        def _show_table(selected_idx, all_tables):
+            """Populate the 6-panel Table Browser when a table is selected."""
+            from tabulate import tabulate as _tabulate
+
+            _empty = gr.update(value=None)
+            if selected_idx is None or not all_tables or selected_idx >= len(all_tables):
+                return _empty, _empty, _empty, _empty, gr.update(value=""), _empty
+
+            t = all_tables[selected_idx]
+
+            # Top-left: plain-text tabulate rendering
+            cell_rows = t.get("cell_rows", [])
+            plain = _tabulate(cell_rows, tablefmt="simple") if cell_rows else ""
+            title = (t.get("title") or "").strip()
+            if title:
+                plain = f"[Title: {title}]\n\n{plain}"
+
+            # Top-middle: CALS XML (prefer annotated version from inspection)
+            inspection = t.get("inspection") or {}
+            cals_xml = (inspection.get("annotated_xml") if isinstance(inspection, dict) else None) or t.get("xml", "")
+
+            # Top-right: full inspection report
+            inspection_data = inspection if isinstance(inspection, dict) else {}
+
+            # Bottom-left: original page PNG
+            orig_path = t.get("image_path", "") or None
+            orig_img  = orig_path if (orig_path and os.path.exists(orig_path)) else None
+
+            # Bottom-middle / top-middle: interactive CALS HTML table + XML panel
+            table_html, xml_panel_html = database._cals_to_interactive_html(cals_xml)
+
+            # Bottom-right: annotated diff PNG (fall back to original page)
+            diff_path = (inspection.get("annotated_image_path") if isinstance(inspection, dict) else None)
+            if not diff_path or not os.path.exists(diff_path):
+                diff_path = orig_path
+            diff_img = diff_path if (diff_path and os.path.exists(diff_path)) else None
+
+            return (
+                gr.update(value=plain),
+                gr.update(value=xml_panel_html),  # tb_cals_xml — dark XML panel with per-entry spans
+                gr.update(value=inspection_data),
+                gr.update(value=orig_img),
+                gr.update(value=table_html),       # tb_cals_html — rendered table with onclick cells
+                gr.update(value=diff_img),
+            )
+
+        table_selector.change(
+            _show_table,
+            inputs=[table_selector, all_tables_state],
+            outputs=[tb_plain_text, tb_cals_xml, tb_inspection, tb_orig_img, tb_cals_html, tb_diff_img],
+        )
 
         """ These helper functions set state and prompts when either the NIM or API Endpoint tabs are selected. """
         
@@ -1260,7 +1451,7 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
                                nim_retrieval_id,
                                nim_hallucination_id,
                                nim_answer_id,
-                               chatbot], [msg, chatbot, actions]
+                               chatbot], [msg, chatbot, actions, table_gallery, inspection_box, table_refs_state, optimize_btn, xml_box]
         )
 
         sample_query_2.click(
@@ -1295,7 +1486,7 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
                                nim_retrieval_id,
                                nim_hallucination_id,
                                nim_answer_id,
-                               chatbot], [msg, chatbot, actions]
+                               chatbot], [msg, chatbot, actions, table_gallery, inspection_box, table_refs_state, optimize_btn, xml_box]
         )
 
         sample_query_3.click(
@@ -1330,7 +1521,7 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
                                nim_retrieval_id,
                                nim_hallucination_id,
                                nim_answer_id,
-                               chatbot], [msg, chatbot, actions]
+                               chatbot], [msg, chatbot, actions, table_gallery, inspection_box, table_refs_state, optimize_btn, xml_box]
         )
 
         sample_query_4.click(
@@ -1365,7 +1556,7 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
                                nim_retrieval_id,
                                nim_hallucination_id,
                                nim_answer_id,
-                               chatbot], [msg, chatbot, actions]
+                               chatbot], [msg, chatbot, actions, table_gallery, inspection_box, table_refs_state, optimize_btn, xml_box]
         )
         
         msg.submit(
@@ -1400,7 +1591,34 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
                                nim_retrieval_id,
                                nim_hallucination_id,
                                nim_answer_id,
-                               chatbot], [msg, chatbot, actions]
+                               chatbot], [msg, chatbot, actions, table_gallery, inspection_box, table_refs_state, optimize_btn, xml_box]
+        )
+
+        """ Optimize The Extraction button — runs multi-strategy comparison agent. """
+
+        def _optimize_extraction(table_refs, progress=gr.Progress()):
+            if not table_refs:
+                return gr.update(
+                    value={"error": "No table data available. Run a direct table query first."},
+                    visible=True,
+                )
+            all_results = []
+            for i, ref in enumerate(table_refs):
+                progress((i + 1) / len(table_refs),
+                         desc=f"Optimizing '{ref.get('title', '')[:30]}'...")
+                result = database.optimize_extraction_agent(
+                    title=ref.get("title", ""),
+                    original_cell_rows=ref.get("cell_rows", []),
+                    pdf_path=ref.get("pdf_path", ""),
+                    page_idx=ref.get("page_idx") or 0,
+                )
+                all_results.append(result)
+            return gr.update(value=all_results, visible=True)
+
+        optimize_btn.click(
+            _optimize_extraction,
+            inputs=[table_refs_state],
+            outputs=[optimization_box],
         )
 
     page.queue()
@@ -1502,24 +1720,41 @@ def _stream_predict(
               "answer_use_nim": answer_use_nim}
     
     if not valid_input(question):
-        yield "", chat_history + [[str(question), "*** ERR: Unable to process query. Query cannot be empty. ***"]], gr.update(show_label=False)
+        yield "", chat_history + [[str(question), "*** ERR: Unable to process query. Query cannot be empty. ***"]], gr.update(show_label=False), gr.update(visible=False), gr.update(visible=False), [], gr.update(visible=False), gr.update(visible=False)
     else: 
         try:
             actions = {}
             config = RunnableConfig(recursion_limit=RECURSION_LIMIT)
             for output in app.stream(inputs, config=config):
                 actions.update(output)
-                yield "", chat_history + [[question, "Working on getting you the best answer..."]], gr.update(value=actions)
+                yield "", chat_history + [[question, "Working on getting you the best answer..."]], gr.update(value=actions), gr.update(visible=False), gr.update(visible=False), [], gr.update(visible=False), gr.update(visible=False)
                 for key, value in output.items():
                     final_value = value
-            yield "", chat_history + [[question, final_value["generation"]]], gr.update(show_label=False)
+            images = final_value.get("table_images") or []
+            reports = final_value.get("inspection_reports") or []
+            refs = final_value.get("selected_table_refs") or []
+            # Prefer annotated CALS XML (with verify= attributes) when inspection found differences;
+            # fall back to plain CALS XML from the best-ranked table ref.
+            cals_xml = None
+            if reports:
+                cals_xml = reports[0].get("annotated_xml")
+            if not cals_xml and refs:
+                cals_xml = refs[0].get("xml")
+            yield (
+                "",
+                chat_history + [[question, final_value["generation"]]],
+                gr.update(show_label=False),
+                gr.update(value=images if images else None, visible=bool(images)),
+                gr.update(value=reports if reports else None, visible=bool(reports)),
+                refs,
+                gr.update(visible=bool(images)),
+                gr.update(value=cals_xml, visible=bool(cals_xml)),
+            )
 
         except Exception as e:
             traceback.print_exc()
-
             message = _get_query_error_message(e)
-
-            yield "", chat_history + [[question, message]], gr.update(show_label=False)
+            yield "", chat_history + [[question, message]], gr.update(show_label=False), gr.update(visible=False), gr.update(visible=False), [], gr.update(visible=False), gr.update(visible=False)
 
 
 _support_matrix_cache = None

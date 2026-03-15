@@ -53,6 +53,9 @@ class GraphState(TypedDict):
     generation: str
     web_search: str
     documents: List[str]
+    table_images: Optional[List[str]]
+    inspection_reports: Optional[List[dict]]
+    selected_table_refs: Optional[List[dict]]
     generator_model_id: str
     router_model_id: str
     retrieval_model_id: str
@@ -100,6 +103,148 @@ from langchain.schema import Document
 ### Nodes
 
 
+def direct_generate(state):
+    """
+    Load the uploaded documents and pass the most relevant table(s) directly to the LLM,
+    bypassing the vectorstore entirely.
+
+    Uses cosine similarity between the query and each table's text to select the
+    top-N most relevant tables that fit within MAX_CONTEXT_CHARS.
+    """
+    print("---DIRECT DOCUMENT ACCESS---")
+    question = state["question"]
+
+    file_paths = database.get_uploaded_files()
+    if not file_paths:
+        return {"documents": [], "question": question,
+                "generation": "No documents have been uploaded yet. Please upload a file first."}
+
+    docs = database.load_documents_from_files(file_paths)
+
+    table_docs = [d for d in docs if d.metadata.get("type") == "table"]
+    if not table_docs:
+        context = "\n\n".join(d.page_content for d in docs)[:3000]
+        print("---DIRECT: no tables found, using first 3000 chars of text---")
+    else:
+        # --- Title-match priority: if the question quotes a table name, find it first ---
+        q_lower = question.lower()
+        title_ranked = []
+        for idx, doc in enumerate(table_docs):
+            title = doc.metadata.get("title", "").strip().lower()
+            if title and title in q_lower:
+                title_ranked.append((2.0, idx))  # score > any cosine score
+                print(f"---DIRECT: title match '{title}' at table index {idx}---")
+
+        # Fall back to cosine similarity for remaining / all tables
+        from sentence_transformers import SentenceTransformer
+        import numpy as np
+        model = SentenceTransformer(database.EMBEDDINGS_MODEL)
+        q_emb = model.encode(question, normalize_embeddings=True)
+        table_texts = [d.page_content for d in table_docs]
+        t_embs = model.encode(table_texts, normalize_embeddings=True)
+        cos_scores = np.dot(t_embs, q_emb)
+
+        title_matched_idxs = {idx for _, idx in title_ranked}
+        cos_ranked = sorted(
+            [(float(cos_scores[i]), i) for i in range(len(table_docs)) if i not in title_matched_idxs],
+            reverse=True
+        )
+        ranked = title_ranked + cos_ranked
+
+        MAX_CONTEXT_CHARS = 6500
+        selected = []
+        total_chars = 0
+        for i, (score, idx) in enumerate(ranked):
+            entry = f"[Table {table_docs[idx].metadata.get('table_index', idx) + 1}]\n{table_docs[idx].page_content}"
+            if i == 0:
+                # Always include the best-matching table; truncate if it exceeds budget
+                if len(entry) > MAX_CONTEXT_CHARS:
+                    entry = entry[:MAX_CONTEXT_CHARS]
+                    print(f"---DIRECT: best table truncated to {MAX_CONTEXT_CHARS} chars---")
+                selected.append(entry)
+                total_chars += len(entry)
+            else:
+                if total_chars + len(entry) > MAX_CONTEXT_CHARS:
+                    break
+                selected.append(entry)
+                total_chars += len(entry)
+
+        context = "\n\n".join(selected)
+        print(f"---DIRECT: selected {len(selected)}/{len(table_docs)} tables by relevance ({total_chars} chars)---")
+        selected_images = []
+        selected_reports = []
+        selected_table_refs = []
+        for i, (_, idx) in enumerate(ranked[:len(selected)]):
+            doc = table_docs[idx]
+            img = doc.metadata.get("image_path") or ""
+            import json as _json
+            _raw_inspection = doc.metadata.get("inspection", "")
+            report = _json.loads(_raw_inspection) if _raw_inspection else None
+            if report:
+                selected_reports.append(report)
+                # Prefer the diff-annotated image (red boxes on unconfirmed cells) if present
+                ann_img = report.get("annotated_image_path") or ""
+                if ann_img and os.path.exists(ann_img):
+                    img = ann_img
+            if img and os.path.exists(img):
+                selected_images.append(img)
+                print(f"  [table_image] Table {doc.metadata.get('table_index',idx)+1}: {img}")
+            _raw_cell_rows = doc.metadata.get("cell_rows", "[]")
+            _cell_rows = _json.loads(_raw_cell_rows) if isinstance(_raw_cell_rows, str) else _raw_cell_rows
+            _page_idx = doc.metadata.get("page_idx", -1)
+            selected_table_refs.append({
+                "fpath":       doc.metadata.get("source", ""),
+                "table_index": doc.metadata.get("table_index"),
+                "title":       doc.metadata.get("title", ""),
+                "pdf_path":    doc.metadata.get("pdf_path", ""),
+                "page_idx":    _page_idx if _page_idx != -1 else None,
+                "cell_rows":   _cell_rows,
+                "xml":         doc.metadata.get("xml") or None,
+            })
+
+    from langchain_core.messages import HumanMessage
+    llm = nim.CustomChatOpenAI(custom_endpoint=state["nim_generator_ip"],
+                               port=state["nim_generator_port"] if len(state["nim_generator_port"]) > 0 else "1234",
+                               model_name=state["nim_generator_id"] if len(state["nim_generator_id"]) > 0 else "openai/gpt-oss-120b",
+                               temperature=0.7) if state["generator_use_nim"] else ChatNVIDIA(model=state["generator_model_id"], temperature=0.7)
+
+    prompt_text = f"""You have been given the following document content:
+
+{context}
+
+Using only the document content above, answer the following question:
+{question}"""
+
+    response = llm.invoke([HumanMessage(content=prompt_text)])
+    return {"documents": docs, "question": question, "generation": response.content,
+            "table_images": selected_images if table_docs else [],
+            "inspection_reports": selected_reports if table_docs else [],
+            "selected_table_refs": selected_table_refs if table_docs else []}
+
+
+
+def chitchat(state):
+    """
+    Generate a direct conversational response without any document retrieval or grading.
+
+    Args:
+        state (dict): The current graph state
+
+    Returns:
+        state (dict): generation key set to the LLM's direct response
+    """
+    print("---CHITCHAT---")
+    question = state["question"]
+
+    from langchain_core.messages import HumanMessage
+    llm = nim.CustomChatOpenAI(custom_endpoint=state["nim_generator_ip"],
+                               port=state["nim_generator_port"] if len(state["nim_generator_port"]) > 0 else "1234",
+                               model_name=state["nim_generator_id"] if len(state["nim_generator_id"]) > 0 else "openai/gpt-oss-120b",
+                               temperature=0.7) if state["generator_use_nim"] else ChatNVIDIA(model=state["generator_model_id"], temperature=0.7)
+    response = llm.invoke([HumanMessage(content=question)])
+    return {"documents": [], "question": question, "generation": response.content}
+
+
 def retrieve(state):
     """
     Retrieve documents from vectorstore
@@ -133,14 +278,18 @@ def generate(state):
     question = state["question"]
     documents = state["documents"]
 
+    # Truncate each document to 800 chars to stay within the model's context window
+    MAX_DOC_CHARS = 800
+    documents = [type(d)(page_content=d.page_content[:MAX_DOC_CHARS], metadata=d.metadata) for d in documents]
+
     # RAG generation
     prompt = PromptTemplate(
         template=state["prompt_generator"],
         input_variables=["question", "document"],
     )
     llm = nim.CustomChatOpenAI(custom_endpoint=state["nim_generator_ip"], 
-                               port=state["nim_generator_port"] if len(state["nim_generator_port"]) > 0 else "8000",
-                               model_name=state["nim_generator_id"] if len(state["nim_generator_id"]) > 0 else "meta/llama-3.1-8b-instruct",
+                               port=state["nim_generator_port"] if len(state["nim_generator_port"]) > 0 else "1234",
+                               model_name=state["nim_generator_id"] if len(state["nim_generator_id"]) > 0 else "openai/gpt-oss-120b",
                                gpu_type=state["nim_generator_gpu_type"] if "nim_generator_gpu_type" in state else None,
                                gpu_count=state["nim_generator_gpu_count"] if "nim_generator_gpu_count" in state else None,
                                temperature=0.7) if state["generator_use_nim"] else ChatNVIDIA(model=state["generator_model_id"], temperature=0.7)
@@ -173,8 +322,8 @@ def grade_documents(state):
         input_variables=["question", "document"],
     )
     llm = nim.CustomChatOpenAI(custom_endpoint=state["nim_retrieval_ip"], 
-                               port=state["nim_retrieval_port"] if len(state["nim_retrieval_port"]) > 0 else "8000",
-                               model_name=state["nim_retrieval_id"] if len(state["nim_retrieval_id"]) > 0 else "meta/llama-3.1-8b-instruct",
+                               port=state["nim_retrieval_port"] if len(state["nim_retrieval_port"]) > 0 else "1234",
+                               model_name=state["nim_retrieval_id"] if len(state["nim_retrieval_id"]) > 0 else "openai/gpt-oss-120b",
                                gpu_type=state["nim_retrieval_gpu_type"] if "nim_retrieval_gpu_type" in state else None,
                                gpu_count=state["nim_retrieval_gpu_count"] if "nim_retrieval_gpu_count" in state else None,
                                temperature=0.7) if state["retrieval_use_nim"] else ChatNVIDIA(model=state["retrieval_model_id"], temperature=0)
@@ -260,20 +409,30 @@ def route_question(state):
         input_variables=["question"],
     )
     llm = nim.CustomChatOpenAI(custom_endpoint=state["nim_router_ip"], 
-                               port=state["nim_router_port"] if len(state["nim_router_port"]) > 0 else "8000",
-                               model_name=state["nim_router_id"] if len(state["nim_router_id"]) > 0 else "meta/llama-3.1-8b-instruct",
+                               port=state["nim_router_port"] if len(state["nim_router_port"]) > 0 else "1234",
+                               model_name=state["nim_router_id"] if len(state["nim_router_id"]) > 0 else "openai/gpt-oss-120b",
                                gpu_type=state["nim_router_gpu_type"] if "nim_router_gpu_type" in state else None,
                                gpu_count=state["nim_router_gpu_count"] if "nim_router_gpu_count" in state else None,
                                temperature=0.7) if state["router_use_nim"] else ChatNVIDIA(model=state["router_model_id"], temperature=0)
     question_router = prompt | llm | JsonOutputParser()
     source = question_router.invoke({"question": question})
     print(source)
-    if source["datasource"] == "web_search":
+    if source["datasource"] == "chitchat":
+        print("---ROUTE QUESTION TO CHITCHAT---")
+        return "chitchat"
+    elif source["datasource"] == "direct":
+        print("---ROUTE QUESTION TO DIRECT DOCUMENT ACCESS---")
+        return "direct"
+    elif source["datasource"] == "web_search":
         print("---ROUTE QUESTION TO WEB SEARCH---")
         return "websearch"
     elif source["datasource"] == "vectorstore":
         print("---ROUTE QUESTION TO RAG---")
         return "vectorstore"
+    else:
+        # Fallback: treat unknown routes as web search
+        print("---ROUTE QUESTION TO WEB SEARCH (fallback)---")
+        return "websearch"
 
 
 def decide_to_generate(state):
@@ -324,13 +483,25 @@ def grade_generation_v_documents_and_question(state):
     documents = state["documents"]
     generation = state["generation"]
 
+    print("\n" + "="*60)
+    print("DEBUG: HALLUCINATION CHECK INPUTS")
+    print("="*60)
+    print(f"[QUESTION]\n{question}\n")
+    print(f"[GENERATION]\n{generation}\n")
+    print(f"[DOCUMENTS] ({len(documents)} chunks)")
+    for i, doc in enumerate(documents):
+        print(f"  -- chunk {i+1} --")
+        print(f"  metadata: {doc.metadata}")
+        print(f"  content:  {doc.page_content}")
+    print("="*60 + "\n")
+
     prompt = PromptTemplate(
         template=state["prompt_hallucination"],
         input_variables=["generation", "documents"],
     )
     llm = nim.CustomChatOpenAI(custom_endpoint=state["nim_hallucination_ip"], 
-                               port=state["nim_hallucination_port"] if len(state["nim_hallucination_port"]) > 0 else "8000",
-                               model_name=state["nim_hallucination_id"] if len(state["nim_hallucination_id"]) > 0 else "meta/llama-3.1-8b-instruct",
+                               port=state["nim_hallucination_port"] if len(state["nim_hallucination_port"]) > 0 else "1234",
+                               model_name=state["nim_hallucination_id"] if len(state["nim_hallucination_id"]) > 0 else "openai/gpt-oss-120b",
                                gpu_type=state["nim_hallucination_gpu_type"] if "nim_hallucination_gpu_type" in state else None,
                                gpu_count=state["nim_hallucination_gpu_count"] if "nim_hallucination_gpu_count" in state else None,
                                temperature=0.7) if state["hallucination_use_nim"] else ChatNVIDIA(model=state["hallucination_model_id"], temperature=0)
@@ -339,6 +510,7 @@ def grade_generation_v_documents_and_question(state):
     score = hallucination_grader.invoke(
         {"documents": documents, "generation": generation}
     )
+    print(f"DEBUG: hallucination grader raw score: {score}")
     grade = score["score"]
 
     # Check hallucination
@@ -347,8 +519,8 @@ def grade_generation_v_documents_and_question(state):
         input_variables=["generation", "question"],
     )
     llm = nim.CustomChatOpenAI(custom_endpoint=state["nim_answer_ip"], 
-                               port=state["nim_answer_port"] if len(state["nim_answer_port"]) > 0 else "8000",
-                               model_name=state["nim_answer_id"] if len(state["nim_answer_id"]) > 0 else "meta/llama-3.1-8b-instruct",
+                               port=state["nim_answer_port"] if len(state["nim_answer_port"]) > 0 else "1234",
+                               model_name=state["nim_answer_id"] if len(state["nim_answer_id"]) > 0 else "openai/gpt-oss-120b",
                                gpu_type=state["nim_answer_gpu_type"] if "nim_answer_gpu_type" in state else None,
                                gpu_count=state["nim_answer_gpu_count"] if "nim_answer_gpu_count" in state else None,
                                temperature=0.7) if state["answer_use_nim"] else ChatNVIDIA(model=state["answer_model_id"], temperature=0)

@@ -25,13 +25,13 @@ class CustomChatOpenAI(BaseChatModel):
     """ This is a custom built class for using LangChain to chat with custom OpenAI API-compatible endpoints, eg. NIMs. """
 
     custom_endpoint: str = Field(None, description='Endpoint of remotely running NIM')
-    port: Optional[str] = "8000"
-    model_name: Optional[str] = "meta/llama-3.1-8b-instruct"
+    port: Optional[str] = "1234"
+    model_name: Optional[str] = "openai/gpt-oss-120b"
     temperature: Optional[float] = 0.0
     gpu_type: Optional[str] = None
     gpu_count: Optional[str] = None
 
-    def __init__(self, custom_endpoint, port="8000", model_name="meta/llama-3.1-8b-instruct", 
+    def __init__(self, custom_endpoint, port="1234", model_name="openai/gpt-oss-120b", 
                  gpu_type=None, gpu_count=None, temperature=0.0, **kwargs):
         super().__init__(**kwargs)
         if gpu_type and gpu_count:
@@ -84,10 +84,31 @@ class CustomChatOpenAI(BaseChatModel):
                 raise ValueError(f"Error with GPU configuration ({self.gpu_type}, {self.gpu_count} GPUs): {str(e)}")
             raise e
     
+    def _strip_special_tokens(self, content: str) -> str:
+        """Strip <|token|>word preamble that gpt-oss-120b prepends to structured outputs.
+
+        Example input:  <|channel|>final <|constrain|>json<|message|>{"score":"yes"}
+        Example output: {"score":"yes"}
+
+        Strategy: find the last <|...|> tag and return everything after it.
+        If no special tokens are present, return the content unchanged.
+        """
+        import re
+        if '<|' not in content:
+            return content
+        # Match the last <|...|> tag (one not followed by another <|...|>)
+        match = re.search(r'<\|[^|]+\|>(?!.*<\|[^|]+\|>)', content, re.DOTALL)
+        if match:
+            return content[match.end():].strip()
+        return content
+
     def _create_chat_result(self, response):
         from langchain_core.messages import ChatMessage
         from langchain_core.outputs import ChatResult, ChatGeneration
-        
-        message = ChatMessage(content=response.choices[0].message.content, role="assistant")
+
+        content = response.choices[0].message.content or ""
+        content = self._strip_special_tokens(content)
+
+        message = ChatMessage(content=content, role="assistant")
         generation = ChatGeneration(message=message)
         return ChatResult(generations=[generation])
