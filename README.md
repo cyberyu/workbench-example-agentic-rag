@@ -5,6 +5,12 @@
 - **Evaluate**: Checks responses for relevance and accuracy, flags hallucinations
 - **Iterate**: Goes through multiple evaluation and generation cycles
 
+### Table Extraction and Validation (Extended)
+- **Extract**: Uploads DOCX/PDF documents and converts each table to CALS XML, preserving spans, column widths, and cell text
+- **Validate Content**: Cross-checks every extracted cell value against two independent PDF parsers (pdfplumber + Camelot) and marks cells `verify="ok"` or `"unconfirmed"`
+- **Annotate Styles**: Sends original page images to a local vision LLM (Qwen2.5-VL via LM Studio) to detect bold formatting and indent levels, capturing the visual hierarchy of the source document
+- **Compare Snapshots**: (Planned) TEDS-based tree edit distance comparison between the original snapshot and any re-transformed output (re-exported PDF, HTML, iXBRL)
+
 ### Modify Agentic RAG
 - **Edit Prompts**: Customize results through your own prompts
 - **Change Parameters**: Adjust agent behavior through parameters and runtime variables
@@ -13,13 +19,14 @@
 ### Inference Your Way
 - **Free Endpoints**: use free endpoints on build.nvidia.com
 - **Self-Hosted**: Point to Ollama or NIM on your own GPUs
+- **Local VLM**: Point to a self-hosted LM Studio instance for offline vision LLM annotation
 
 ## Get Started 
 
 #### This README has three modes:
 - **Easy Mode**: Use the application
 - **Intermediate Mode**: Modify the application
-- **Advanced Mode**: Self-host gpus for inference
+- **Advanced Mode**: Self-host GPUs for inference
 
 ### Prerequisites - AI Workbench and an Internet Connection
 
@@ -28,6 +35,8 @@
 
 > You need internet because Agentic RAG uses an NVIDIA endpoint for document embedding.
 
+> **Table extraction and VLM annotation** work fully offline once LM Studio is running locally — no NVIDIA API key required for those features.
+
 ### Easy Mode (< 5 minutes if Workbench installed)
 1. Get NVIDIA and Tavily API keys:  
    - ``NVIDIA_API_KEY`` → [Generate](https://org.ngc.nvidia.com/setup/api-keys)  See instructions [here](https://docs.nvidia.com/ai-enterprise/deployment/spark-rapids-accelerator/latest/appendix-ngc.html).
@@ -35,6 +44,14 @@
 2. **Clone** this repo with AI Workbench > [configure the keys](https://docs.nvidia.com/ai-workbench/user-guide/latest/environment/variables.html#basic-usage-for-environment-variables) when prompted.  
 3. Click **Open Chat** > Go to the **Document** tab in the web app > Click **Add to Context**.  
 4. Type in your question > Hit enter - answers come from free cloud endpoints.
+
+### Using the Table Browser (optional)
+- Upload a DOCX containing financial or structured tables via the **Document** tab.
+- Switch to the **Table Browser** tab to inspect the extracted CALS XML, interactive HTML rendering, and per-cell verification status.
+- Click **Re-annotate with VLM** to run Qwen2.5-VL (via a local LM Studio instance at `http://localhost:1234/v1`) and write `bold` and `indent` attributes onto each cell.
+- Annotated snapshots are persisted to `data/table_catalog.json` after each table so progress survives interruption.
+
+> **LM Studio requirement**: launch LM Studio with the `--no-sandbox` flag and load the `Qwen2.5-VL-72B` model before clicking Re-annotate.
 
 ## Details for the README Modes
 <details>
@@ -85,6 +102,12 @@ This application is a quick prototype and not a robust piece of software. So the
    - Add new endpoints from build.nvidia.com
    - Change the look and feel of the Gradio app or add new features
    - Modify the agent
+   - Extend the table extraction pipeline in `code/chatui/utils/database.py`:
+     - `_load_docx_direct()` — DOCX → CALS XML with spans and column widths
+     - `verify_table()` — cross-checks cell values against pdfplumber + Camelot
+     - `_annotate_entry_styles_with_vlm()` — VLM bold/indent detection
+     - `_cals_to_fop_pdf()` / `_cals_to_interactive_html()` — table rendering
+   - See [`agentic-rag-docs/table-validation-approach.md`](agentic-rag-docs/table-validation-approach.md) for the full validation design
    - Fix any bugs you find
 
 
@@ -100,6 +123,12 @@ Use these details if you want to modify the application, e.g. by configuring pro
 1. Set up a Linux box with an NVIDIA GPU and Docker.  
 2. Deploy an Ollama container or an NVIDIA NIM on that host.  
 3. Configure the chat app to use the self-hosted endpoint.
+
+#### Self-hosting the VLM for table annotation
+- Install [LM Studio](https://lmstudio.ai/) on a machine with a compatible GPU.
+- Load model `Qwen2.5-VL-72B` (or any OpenAI-compatible vision model).
+- Start the local server: `./LM-Studio-*.AppImage --no-sandbox` and enable the API server at port `1234`.
+- The app auto-detects the first available model via `client.models.list()`; no extra configuration required.
 
 
 
