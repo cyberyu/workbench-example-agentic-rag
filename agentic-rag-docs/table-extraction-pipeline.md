@@ -46,7 +46,14 @@ This document summarises the end-to-end approach for extracting, annotating, val
    │   verify badges)      │       │                          │
    └───────────────────────┘       └──────────────────────────┘
 ```
+python-docx — structural extraction
+python-docx reads the raw .docx XML directly. It is the primary extraction tool and is used to build the canonical CALS XML:
 
+Cell text — reads <w:tc> paragraph runs, preserving whitespace and special characters exactly as authored
+Merged cells — decodes <w:hMerge>, <w:vMerge> into namest/nameend/morerows CALS span attributes
+Column widths — reads <w:tblGrid><w:gridCol w:w="..."/> proportional widths → colwidth on <colspec>
+Alignment — reads <w:jc> paragraph justification → align attribute per cell
+None of this information survives in a rendered PDF. A PDF is a flat page description — it has no concept of "this number is in column 3, row 2, spanning 2 columns". python-docx is the only tool that can recover the logical table structure.
 ---
 
 ## Pass 1 — Content Verification

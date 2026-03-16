@@ -62,3 +62,201 @@ IMPORTANT: You are using gradio version 4.15.0, however version 4.44.1 is availa
 [pdfplumber-annotate] Annotated 22 entries on page 10
 [VLM] Image resized to 395x512 PNG (79 KB)
 [VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 21/21 entries annotated
+[pdfplumber-annotate] Annotated 24 entries on page 11
+[VLM] Image resized to 395x512 PNG (73 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 23/23 entries annotated
+[pdfplumber-annotate] Annotated 179 entries on page 11
+[VLM] Image resized to 395x512 PNG (73 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 170/170 entries annotated
+[pdfplumber-annotate] Annotated 180 entries on page 12
+[VLM] Image resized to 395x512 PNG (86 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 171/171 entries annotated
+[pdfplumber-annotate] Annotated 80 entries on page 13
+[VLM] Image resized to 395x512 PNG (106 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 77/77 entries annotated
+[pdfplumber-annotate] Annotated 81 entries on page 13
+[VLM] Image resized to 395x512 PNG (106 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 78/78 entries annotated
+[pdfplumber-annotate] Annotated 23 entries on page 13
+[VLM] Image resized to 395x512 PNG (106 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 20/20 entries annotated
+[pdfplumber-annotate] Annotated 31 entries on page 14
+[VLM] Image resized to 395x512 PNG (128 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 28/28 entries annotated
+[pdfplumber-annotate] Annotated 132 entries on page 15
+[VLM] Image resized to 395x512 PNG (74 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 128/128 entries annotated
+[pdfplumber-annotate] Annotated 36 entries on page 15
+[VLM] Image resized to 395x512 PNG (74 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 31/31 entries annotated
+[pdfplumber-annotate] Annotated 35 entries on page 16
+[VLM] Image resized to 395x512 PNG (73 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 34/34 entries annotated
+[pdfplumber-annotate] Annotated 12 entries on page 16
+[VLM] Image resized to 395x512 PNG (73 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 11/11 entries annotated
+[pdfplumber-annotate] Annotated 33 entries on page 16
+[VLM] Image resized to 395x512 PNG (73 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 32/32 entries annotated
+[pdfplumber-annotate] Annotated 36 entries on page 17
+[VLM] Image resized to 395x512 PNG (93 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 31/31 entries annotated
+[pdfplumber-annotate] Annotated 66 entries on page 17
+[VLM] Image resized to 395x512 PNG (93 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 59/59 entries annotated
+[pdfplumber-annotate] Annotated 18 entries on page 17
+[VLM] Image resized to 395x512 PNG (93 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 17/17 entries annotated
+[pdfplumber-annotate] Annotated 169 entries on page 18
+[VLM] Image resized to 395x512 PNG (108 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 163/163 entries annotated
+[pdfplumber-annotate] Annotated 18 entries on page 18
+[VLM] Image resized to 395x512 PNG (108 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 17/17 entries annotated
+[pdfplumber-annotate] Annotated 19 entries on page 19
+[VLM] Image resized to 395x512 PNG (118 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 18/18 entries annotated
+[pdfplumber-annotate] Annotated 13 entries on page 19
+[VLM] Image resized to 395x512 PNG (118 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 12/12 entries annotated
+[pdfplumber-annotate] Annotated 23 entries on page 20
+[VLM] Image resized to 395x512 PNG (50 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 22/22 entries annotated
+[pdfplumber-annotate] Annotated 23 entries on page 21
+[VLM] Image resized to 395x512 PNG (61 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 22/22 entries annotated
+[pdfplumber-annotate] Annotated 65 entries on page 21
+[VLM] Image resized to 395x512 PNG (61 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 64/64 entries annotated
+[pdfplumber-annotate] Annotated 37 entries on page 22
+[VLM] Image resized to 395x512 PNG (110 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 36/36 entries annotated
+[pdfplumber-annotate] Annotated 15 entries on page 23
+[VLM] Image resized to 395x512 PNG (70 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] LM Studio call failed: Error code: 400 - {'error': 'failed to process image'}
+[VLM] Style annotation: 0/10 entries annotated
+[pdfplumber-annotate] Annotated 22 entries on page 23
+[VLM] Image resized to 395x512 PNG (70 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 17/17 entries annotated
+[pdfplumber-annotate] Annotated 100 entries on page 24
+[VLM] Image resized to 395x512 PNG (68 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 99/99 entries annotated
+[pdfplumber-annotate] Annotated 72 entries on page 26
+[VLM] Image resized to 395x512 PNG (90 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 71/71 entries annotated
+[pdfplumber-annotate] Annotated 17 entries on page 27
+[VLM] Image resized to 395x512 PNG (134 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 16/16 entries annotated
+[pdfplumber-annotate] Annotated 41 entries on page 27
+[VLM] Image resized to 395x512 PNG (134 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 40/40 entries annotated
+[pdfplumber-annotate] Annotated 6 entries on page 31
+[VLM] Image resized to 395x512 PNG (151 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 4/4 entries annotated
+[pdfplumber-annotate] Annotated 12 entries on page 31
+[VLM] Image resized to 395x512 PNG (151 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 10/10 entries annotated
+[pdfplumber-annotate] Annotated 6 entries on page 32
+[VLM] Image resized to 395x512 PNG (134 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 4/4 entries annotated
+[pdfplumber-annotate] Annotated 35 entries on page 32
+[VLM] Image resized to 395x512 PNG (134 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 32/32 entries annotated
+[pdfplumber-annotate] Annotated 89 entries on page 33
+[VLM] Image resized to 395x512 PNG (112 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 86/86 entries annotated
+[pdfplumber-annotate] Annotated 15 entries on page 35
+[VLM] Image resized to 395x512 PNG (105 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 12/12 entries annotated
+[pdfplumber-annotate] Annotated 15 entries on page 35
+[VLM] Image resized to 395x512 PNG (105 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 12/12 entries annotated
+[pdfplumber-annotate] Annotated 15 entries on page 35
+[VLM] Image resized to 395x512 PNG (105 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 12/12 entries annotated
+[pdfplumber-annotate] Annotated 38 entries on page 10
+[VLM] Image resized to 395x512 PNG (79 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 37/37 entries annotated
+[pdfplumber-annotate] Annotated 55 entries on page 37
+[VLM] Image resized to 395x512 PNG (148 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 52/52 entries annotated
+[pdfplumber-annotate] Annotated 16 entries on page 39
+[VLM] Image resized to 395x512 PNG (135 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 15/15 entries annotated
+[pdfplumber-annotate] Annotated 31 entries on page 42
+[VLM] Image resized to 395x512 PNG (116 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 30/30 entries annotated
+[pdfplumber-annotate] Annotated 25 entries on page 56
+[VLM] Image resized to 395x512 PNG (88 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 20/20 entries annotated
+[pdfplumber-annotate] Annotated 13 entries on page 56
+[VLM] Image resized to 395x512 PNG (88 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 8/8 entries annotated
+[pdfplumber-annotate] Annotated 32 entries on page 57
+[VLM] Image resized to 395x512 PNG (52 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 31/31 entries annotated
+[pdfplumber-annotate] Annotated 5 entries on page 58
+[VLM] Image resized to 395x512 PNG (19 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 4/4 entries annotated
+[pdfplumber-annotate] Annotated 3 entries on page 60
+[VLM] Image resized to 395x512 PNG (127 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 3/3 entries annotated
+[pdfplumber-annotate] Annotated 3 entries on page 61
+[VLM] Image resized to 395x512 PNG (129 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 3/3 entries annotated
+[pdfplumber-annotate] Annotated 3 entries on page 62
+[VLM] Image resized to 395x512 PNG (51 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 3/3 entries annotated
+[pdfplumber-annotate] Annotated 3 entries on page 63
+[VLM] Image resized to 395x512 PNG (53 KB)
+[VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 3/3 entries annotated
