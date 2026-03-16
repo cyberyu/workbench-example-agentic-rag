@@ -45,3 +45,4 @@ IMPORTANT: You are using gradio version 4.15.0, however version 4.44.1 is availa
 [pdfplumber-annotate] Annotated 152 entries on page 5
 [VLM] Image resized to 395x512 PNG (84 KB)
 [VLM] Using model: qwen2.5-vl-72b-instruct
+[VLM] Style annotation: 151/151 entries annotated
