@@ -383,7 +383,7 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
                 # Main chatbot panel. 
                 with gr.Row(equal_height=True):
                     with gr.Column(min_width=350):
-                        chatbot = gr.Chatbot(show_label=False, height=120)
+                        chatbot = gr.Chatbot(show_label=False, height=120, type="messages")
 
                 # Table page image viewer — shown only when direct document access finds table images
                 with gr.Row(equal_height=True):
@@ -1269,7 +1269,7 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
                         tb_entry_edit = gr.Textbox(visible=False, elem_id="tb-entry-edit")
         # ── END TABLE BROWSER ─────────────────────────────────────────────────
 
-        page.load(logger.read_logs, None, logs, every=1)
+        gr.Timer(value=1).tick(logger.read_logs, inputs=None, outputs=logs)
 
         def _on_page_load():
             """Restore UI state from the previously persisted upload on startup."""
@@ -3465,7 +3465,7 @@ def _stream_predict(
     nim_retrieval_id: str,
     nim_hallucination_id: str,
     nim_answer_id: str,
-    chat_history: List[Tuple[str, str]],
+    chat_history: List[dict],
 ) -> Any:
 
     inputs = {"question": question, 
@@ -3501,14 +3501,14 @@ def _stream_predict(
               "answer_use_nim": answer_use_nim}
     
     if not valid_input(question):
-        yield "", chat_history + [[str(question), "*** ERR: Unable to process query. Query cannot be empty. ***"]], gr.update(show_label=False), gr.update(visible=False), gr.update(visible=False), [], gr.update(visible=False), gr.update(visible=False)
+        yield "", chat_history + [{"role": "user", "content": str(question)}, {"role": "assistant", "content": "*** ERR: Unable to process query. Query cannot be empty. ***"}], gr.update(show_label=False), gr.update(visible=False), gr.update(visible=False), [], gr.update(visible=False), gr.update(visible=False)
     else: 
         try:
             actions = {}
             config = RunnableConfig(recursion_limit=RECURSION_LIMIT)
             for output in app.stream(inputs, config=config):
                 actions.update(output)
-                yield "", chat_history + [[question, "Working on getting you the best answer..."]], gr.update(value=actions), gr.update(visible=False), gr.update(visible=False), [], gr.update(visible=False), gr.update(visible=False)
+                yield "", chat_history + [{"role": "user", "content": question}, {"role": "assistant", "content": "Working on getting you the best answer..."}], gr.update(value=actions), gr.update(visible=False), gr.update(visible=False), [], gr.update(visible=False), gr.update(visible=False)
                 for key, value in output.items():
                     final_value = value
             images = final_value.get("table_images") or []
@@ -3523,7 +3523,7 @@ def _stream_predict(
                 cals_xml = refs[0].get("xml")
             yield (
                 "",
-                chat_history + [[question, final_value["generation"]]],
+                chat_history + [{"role": "user", "content": question}, {"role": "assistant", "content": final_value["generation"]}],
                 gr.update(show_label=False),
                 gr.update(value=images if images else None, visible=bool(images)),
                 gr.update(value=reports if reports else None, visible=bool(reports)),
@@ -3535,7 +3535,7 @@ def _stream_predict(
         except Exception as e:
             traceback.print_exc()
             message = _get_query_error_message(e)
-            yield "", chat_history + [[question, message]], gr.update(show_label=False), gr.update(visible=False), gr.update(visible=False), [], gr.update(visible=False), gr.update(visible=False)
+            yield "", chat_history + [{"role": "user", "content": question}, {"role": "assistant", "content": message}], gr.update(show_label=False), gr.update(visible=False), gr.update(visible=False), [], gr.update(visible=False), gr.update(visible=False)
 
 
 _support_matrix_cache = None
