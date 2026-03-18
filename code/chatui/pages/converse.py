@@ -137,7 +137,7 @@ from chatui.utils import compile, database, logger, gpu_compatibility
 from langgraph.graph import END, StateGraph
 
 PATH = "/"
-TITLE = "Agentic RAG: Chat UI"
+TITLE = "Word Document Table Transformation"
 OUTPUT_TOKENS = 250
 MAX_DOCS = 5
 
@@ -195,6 +195,142 @@ _LOCAL_CSS = """
     outline: 2px solid #d4a000 !important;
     border-radius: 2px;
 }
+#overwrite-storage-cb input[type="checkbox"] {
+    border-color: #aaaaaa !important;
+    border: 1.5px solid #aaaaaa !important;
+}
+"""
+
+_LOCAL_JS = """
+() => {
+    // ── Deferred Edit-Clean-XML jump ────────────────────────────────────
+    // When the user voluntarily clicks the "Edit Clean XML" tab after clicking
+    // a cell, jump CM6 to the line stored by the last cell onclick.
+    window._calsJumpLine = -1;
+    document.addEventListener('click', function(e) {
+        var btn = e.target.closest('#tb-right-tabs button[role=tab]');
+        if (!btn || btn.textContent.indexOf('Edit Clean XML') < 0) return;
+        var line = window._calsJumpLine;
+        if (line < 0) return;
+        window._calsJumpLine = -1;
+        var lh = 17.6, target = line * lh, tries = 0;
+        (function _jump() {
+            var scr = document.querySelector('#tb-cals-xml .cm-scroller');
+            if (!scr || scr.scrollHeight === 0) {
+                if (++tries < 20) setTimeout(_jump, 100);
+                return;
+            }
+            scr.scrollTop = Math.max(0, target - 5 * lh);
+            setTimeout(function() {
+                var prev = document.querySelectorAll('#tb-cals-xml .cals-edit-hi');
+                for (var j = 0; j < prev.length; j++) {
+                    prev[j].classList.remove('cals-edit-hi');
+                    prev[j].style.backgroundColor = '';
+                }
+                var cms = document.querySelectorAll('#tb-cals-xml .cm-line');
+                var best = null, bestd = Infinity;
+                for (var k = 0; k < cms.length; k++) {
+                    var d = Math.abs(cms[k].offsetTop - target);
+                    if (d < bestd) { bestd = d; best = cms[k]; }
+                }
+                if (best) {
+                    best.classList.add('cals-edit-hi');
+                    best.style.backgroundColor = '#264f78';
+                    best.scrollIntoView({behavior: 'smooth', block: 'center'});
+                }
+            }, 200);
+        })();
+    });
+
+    // ── Inline cell editor popup ─────────────────────────────────────────
+    // Called from onclick attrs on CALS-entry spans in the annotation panel.
+    // Reads data-celltext / data-verify / data-reason from the span, shows a
+    // modal textarea; Save dispatches "eid||new_text" to #tb-entry-edit.
+    window._calsEditPopup = function(eid) {
+        var el = document.getElementById(eid);
+        if (!el) return;
+        var text   = el.getAttribute('data-celltext') || '';
+        var verify = el.getAttribute('data-verify')   || '';
+        var reason = el.getAttribute('data-reason')   || '';
+
+        var old = document.getElementById('cals-edit-popup');
+        if (old) old.remove();
+
+        var badge = verify === 'ok'
+            ? '<span style="color:#4ec94e;font-size:12px;font-weight:bold;">&#9679; Confirmed</span>'
+            : (verify === 'unconfirmed'
+                ? '<span style="color:#f14c4c;font-size:12px;font-weight:bold;">&#9679; Unconfirmed</span>'
+                : '');
+
+        function _esc(s) {
+            return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        }
+        var reasonHtml = reason
+            ? '<div style="margin:8px 0 10px;font-size:11px;color:#9cdcfe;white-space:pre-wrap;'
+              + 'border-left:2px solid #555;padding-left:8px;line-height:1.5;">'
+              + _esc(reason) + '</div>'
+            : '';
+
+        var d = document.createElement('div');
+        d.id = 'cals-edit-popup';
+        d.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;'
+            + 'background:rgba(0,0,0,0.55);z-index:99999;'
+            + 'display:flex;align-items:center;justify-content:center;';
+        d.innerHTML =
+            '<div style="background:#1e1e1e;color:#d4d4d4;border-radius:8px;padding:24px;'
+            + 'min-width:440px;max-width:660px;width:90%;font-family:monospace;'
+            + 'box-shadow:0 8px 40px rgba(0,0,0,0.7);border:1px solid #444;">'
+            + '<div style="margin-bottom:10px;font-size:11px;color:#808080;">Entry: '
+            + '<span style="color:#ce9178;">' + _esc(eid) + '</span></div>'
+            + badge + reasonHtml
+            + '<textarea id="_cals_edit_ta" style="width:100%;box-sizing:border-box;'
+            + 'margin-top:10px;height:80px;background:#252526;color:#d4d4d4;'
+            + 'border:1px solid #555;border-radius:4px;padding:8px;'
+            + 'font-family:monospace;font-size:13px;resize:vertical;">'
+            + _esc(text) + '</textarea>'
+            + '<div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end;">'
+            + '<button id="_cals_cancel_btn" style="padding:6px 18px;background:#3a3a3a;'
+            + 'color:#d4d4d4;border:1px solid #555;border-radius:4px;cursor:pointer;">Cancel</button>'
+            + '<button id="_cals_save_btn" style="padding:6px 18px;background:#0e639c;'
+            + 'color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:bold;">'
+            + '&#128190;&nbsp;Save</button>'
+            + '</div></div>';
+        document.body.appendChild(d);
+
+        var ta = document.getElementById('_cals_edit_ta');
+        if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
+
+        document.getElementById('_cals_cancel_btn').onclick = function() {
+            document.getElementById('cals-edit-popup').remove();
+        };
+        document.getElementById('_cals_save_btn').onclick = function() {
+            var val = document.getElementById('_cals_edit_ta').value;
+            var sig = eid + '||' + val;
+            var inp = document.querySelector('#tb-entry-edit input, #tb-entry-edit textarea');
+            if (inp) { inp.value = sig; inp.dispatchEvent(new Event('input', {bubbles:true})); }
+            document.getElementById('cals-edit-popup').remove();
+        };
+        // Click backdrop to dismiss
+        d.onclick = function(ev) { if (ev.target === d) d.remove(); };
+    };
+
+    window._tblListSelect = function(row, idx) {
+        var el = document.querySelector('#tb-list-click input');
+        if (el) { el.value = idx; el.dispatchEvent(new Event('input', {bubbles:true})); }
+        document.querySelectorAll('.tbl-list-row').forEach(function(r) {
+            r.classList.remove('tbl-list-active');
+        });
+        row.classList.add('tbl-list-active');
+    };
+    window._paraListSelect = function(row, seq) {
+        var el = document.querySelector('#tb-para-click input');
+        if (el) { el.value = seq; el.dispatchEvent(new Event('input', {bubbles:true})); }
+        document.querySelectorAll('.tbl-list-row').forEach(function(r) {
+            r.classList.remove('tbl-list-active');
+        });
+        row.classList.add('tbl-list-active');
+    };
+}
 """
 
 import os
@@ -222,7 +358,7 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
     
     model_list = [LLAMA, MISTRAL, QWEN]
 
-    with gr.Blocks(title=TITLE, theme=kui_theme, css=kui_styles + _LOCAL_CSS) as page:
+    with gr.Blocks(title=TITLE, theme=kui_theme, css=kui_styles + _LOCAL_CSS, js=_LOCAL_JS) as page:
         gr.Markdown(f"# {TITLE}")
 
         """ Keep state of which queries need to use NIMs vs API Endpoints. """
@@ -247,7 +383,7 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
                 # Main chatbot panel. 
                 with gr.Row(equal_height=True):
                     with gr.Column(min_width=350):
-                        chatbot = gr.Chatbot(show_label=False, height=500)
+                        chatbot = gr.Chatbot(show_label=False, height=120)
 
                 # Table page image viewer — shown only when direct document access finds table images
                 with gr.Row(equal_height=True):
@@ -308,14 +444,7 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
                     with gr.Column(scale=1, min_width=150):
                         _ = gr.ClearButton([msg, chatbot], value="Clear Chat History")
 
-                # Sample questions that users can click on to use
-                with gr.Row(equal_height=True):
-                    sample_query_1 = gr.Button("How do I add an integration in the CLI?", variant="secondary", size="sm", interactive=True)
-                    sample_query_2 = gr.Button("How do I fix an inaccessible remote Location?", variant="secondary", size="sm", interactive=True)
-                
-                with gr.Row(equal_height=True):
-                    sample_query_3 = gr.Button("What are the NVIDIA-provided default base environments?", variant="secondary", size="sm", interactive=True)
-                    sample_query_4 = gr.Button("How do I create a support bundle for troubleshooting?", variant="secondary", size="sm", interactive=True)
+
             
             # Hidden column to be rendered when the user collapses all settings.
             with gr.Column(scale=1, min_width=100, visible=False) as hidden_settings_column:
@@ -337,28 +466,28 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
                                                     interactive=False)
 
                         with gr.Column():
-                            step_1_btn = gr.Button("Step 1: Submit a sample query", elem_id="rag-inputs")
                             step_1 = gr.Markdown(
                                 """
-                                ### Purpose: Generate and evaluate a generic response&nbsp;<ins>without</ins>&nbsp;RAG
-
-                                * Ensure both ``NVIDIA_API_KEY`` and ``TAVILY_API_KEY`` are configured in AI Workbench.
-                                * Select a sample query from the chatbot on the left-hand side of the window.
-                                * Wait for the response to generate and evaluate the relevance of the response.
-                                """,
-                                visible=True
-                            )
-
-                            step_2_btn = gr.Button("Step 2: Upload the sample dataset", elem_id="rag-inputs")
-                            step_2 = gr.Markdown(
-                                """
-                                ### Purpose: Populate the RAG database with useful context to augment responses
-
-                                * Select the **Documents** tab on the right-hand side of the browser window.
-                                * Select **Add to Context** under the sample webpage dataset.
-                                * Wait for the upload to complete.
+                                * Extract Tables among Word Document
+                                * Create Insertion Points for All Tables
+                                * Create CASL XML representation for all Tables
+                                * Enable RAG search for all Tables
                                 """,
                                 visible=False
+                            )
+
+                            step_2_btn = gr.Button("Step 1: Upload the Word file in Documents tab", elem_id="rag-inputs")
+                            step_2 = gr.Markdown(
+                                """
+                                Go to the **Documents** tab → **Files** and upload a `.docx` file. The pipeline will:
+
+                                1. **Extract tables** from the Word document using `python-docx` and match each table to its rendered PDF page
+                                2. **Build CALS XML** — each table is converted to a structured CALS XML representation with insertion-point markers
+                                3. **Annotate styles** — `pdfplumber` reads font data from the PDF to set `bold` and `indent` attributes on each cell *(optionally enhanced by a vision LLM)*
+                                4. **Save the table catalog** — all tables are persisted to `table_catalog.json` and browsable in the **Table Browser** tab
+                                5. **Embed into vector store** — table text is chunked and embedded using `all-MiniLM-L6-v2` into a local **Chroma** database, enabling RAG search over all tables
+                                """,
+                                visible=True
                             )
 
                             step_3_btn = gr.Button("Step 3: Resubmit the sample query", elem_id="rag-inputs")
@@ -398,7 +527,7 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
 
 
                     # Settings for each component model of the agentic workflow
-                    with gr.TabItem("Models", id=1) as agent_settings:
+                    with gr.TabItem("Models", id=1, visible=False) as agent_settings:
                             gr.Markdown(
                                         """
                                         ##### Use the Models tab to configure individual model components
@@ -787,16 +916,16 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
                     with gr.TabItem("Documents", id=2) as document_settings:
                         gr.Markdown(
                             """                            
-                            ##### Use the Documents tab to create a RAG context
-                            - Webpages: Enter URLs of webpages for the context
-                            - Files: Use files (pdf, csv, .txt) for the context
-                            - Add to Context: Add documents to the context. Context is stored until you clear it.
-                            - Clear Context: Resets the context to empty
+                            ##### Upload a Word document (.docx) to extract and transform its tables
+                            - **Upload**: Drop a `.docx` file to extract all tables, generate insertion-point markers, and build CALS XML representations
+                            - **VLM Annotation** *(optional)*: Use a vision model to annotate bold/indent styles on each table cell
+                            - **Overwrite**: Check to clear all existing tables, images, and the vector store before processing
+                            - **Clear Context**: Removes all extracted tables and resets the RAG index
                             """
                             )
                         gr.HTML('<hr style="border:1px solid #ccc; margin: 10px 0;">')
-                        with gr.Tabs(selected=0) as document_tabs:
-                            with gr.TabItem("Webpages", id=0) as url_tab:
+                        with gr.Tabs(selected=1) as document_tabs:
+                            with gr.TabItem("Webpages", id=0, visible=False) as url_tab:
                                 url_docs = gr.Textbox(value=EXAMPLE_LINKS,
                                                       lines=EXAMPLE_LINKS_LEN, 
                                                       info="Enter a list of URLs, one per line", 
@@ -816,6 +945,7 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
                                     label="⚠️ Overwrite all existing storage (clears vectorstore, images, catalog)",
                                     value=False,
                                     interactive=True,
+                                    elem_id="overwrite-storage-cb",
                                 )
                                 docs_clear = gr.Button(value="Clear Context")
                                 upload_progress = gr.HTML(value="", visible=False, elem_id="upload-progress")
@@ -917,10 +1047,67 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
                         scale=2,
                         elem_id="tb-agent-btn",
                     )
+                    tb_export_pdf_btn = gr.Button(
+                        "📄 Export Full Document PDF",
+                        variant="secondary",
+                        size="sm",
+                        scale=2,
+                        elem_id="tb-export-pdf-btn",
+                    )
+                    tb_export_docx_btn = gr.Button(
+                        "📝 Export Edited .docx",
+                        variant="secondary",
+                        size="sm",
+                        scale=2,
+                        elem_id="tb-export-docx-btn",
+                    )
+                # Review panel — appears when the user clicks either export button
+                tb_export_review_panel = gr.HTML(
+                    value="", visible=False, elem_id="tb-export-review-panel"
+                )
+                with gr.Row():
+                    tb_confirm_pdf_btn = gr.Button(
+                        "\u2705 Confirm Export PDF",
+                        variant="primary", size="sm",
+                        visible=False, scale=2,
+                        elem_id="tb-confirm-pdf-btn",
+                    )
+                    tb_confirm_docx_btn = gr.Button(
+                        "\u2705 Confirm Export .docx",
+                        variant="primary", size="sm",
+                        visible=False, scale=2,
+                        elem_id="tb-confirm-docx-btn",
+                    )
+                    tb_cancel_export_btn = gr.Button(
+                        "\u2716 Cancel",
+                        variant="stop", size="sm",
+                        visible=False, scale=1,
+                        elem_id="tb-cancel-export-btn",
+                    )
                 tb_vlm_status = gr.HTML(value="", elem_id="tb-vlm-status")
                 tb_validate_status = gr.HTML(value="", elem_id="tb-validate-status")
                 tb_fop_verify_status = gr.HTML(value="", elem_id="tb-fop-verify-status")
                 tb_agent_status = gr.HTML(value="", elem_id="tb-agent-status")
+                tb_export_pdf_status = gr.HTML(value="", elem_id="tb-export-pdf-status")
+                tb_export_pdf_file = gr.File(
+                    label="Download Full Document PDF",
+                    visible=False,
+                    elem_id="tb-export-pdf-file",
+                )
+                tb_export_docx_status = gr.HTML(value="", elem_id="tb-export-docx-status")
+                tb_export_docx_file = gr.File(
+                    label="Download Edited .docx",
+                    visible=False,
+                    elem_id="tb-export-docx-file",
+                )
+
+                # "Text + Tables" toggle — revealed only when the list panel is open
+                tb_show_text_cb = gr.Checkbox(
+                    label="Show Text + Tables (full document sequence)",
+                    value=False,
+                    visible=False,
+                    elem_id="tb-show-text-cb",
+                )
 
                 # Hidden expanded list panel (toggled by the button above)
                 tb_table_list = gr.HTML(
@@ -931,6 +1118,8 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
                 # Hidden number input — list-row clicks write an index here to
                 # trigger _show_table without a second gr.Dropdown change event.
                 tb_list_click = gr.Number(value=-1, visible=False, elem_id="tb-list-click")
+                # Hidden number input — paragraph-row clicks write doc_sequence seq here.
+                tb_para_click = gr.Number(value=-1, visible=False, elem_id="tb-para-click")
 
                 gr.HTML('<hr style="border:1px solid #ccc; margin:10px 0;">')
 
@@ -941,7 +1130,7 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
                             with gr.TabItem("🗂 Rendered CALS XML"):
                                 with gr.Row(equal_height=True):
                                     with gr.Column(scale=3):
-                                        gr.Markdown("Click any cell to jump to its `<entry>` in the **View XML** tab ➜")
+                                        gr.Markdown("Click any cell to jump to its `<entry>` in the **View Annotation XML** tab")
                                     tb_cals_theme = gr.Dropdown(
                                         choices=[
                                             ("✅ Verify (green/red)",   "verify"),
@@ -978,17 +1167,63 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
                                 )
                     with gr.Column(scale=1):
                         with gr.Tabs(elem_id="tb-right-tabs"):
-                            with gr.TabItem("📄 View XML"):
+                            with gr.TabItem("📄 View Annotation XML"):
                                 tb_cals_xml_view = gr.HTML(
                                     elem_id="tb-cals-xml-view",
                                 )
-                            with gr.TabItem("✏️ Edit XML"):
+                            with gr.TabItem("✏️ Edit Clean XML"):
                                 tb_cals_xml = gr.Code(
                                     label="",
                                     interactive=True,
                                     lines=30,
                                     elem_id="tb-cals-xml",
                                 )
+                                with gr.Row():
+                                    tb_save_btn = gr.Button("💾 Save Clean XML", variant="primary", size="sm")
+                                tb_save_status = gr.HTML(value="", elem_id="tb-save-status")
+                                gr.HTML("<hr style='border:none;border-top:1px solid #333;margin:8px 0 4px;'>")
+                                with gr.Row():
+                                    tb_transform_dd = gr.Dropdown(
+                                        choices=[
+                                            ("\u2014 None \u2014",     "none"),
+                                            ("🎨 Stripe rows", "stripe"),
+                                        ],
+                                        value="none",
+                                        label="Style Transform",
+                                        interactive=True,
+                                        scale=2,
+                                        elem_id="tb-transform-dd",
+                                    )
+                                    tb_transform_color_dd = gr.Dropdown(
+                                        choices=[
+                                            ("🔵 Light blue",   "EBF3FB"),
+                                            ("🟢 Light green",  "E8F5E9"),
+                                            ("🟡 Light yellow", "FFFDE7"),
+                                            ("🟣 Lavender",     "EDE7F6"),
+                                            ("🦷 Light pink",   "FCE4EC"),
+                                        ],
+                                        value="EBF3FB",
+                                        label="Color",
+                                        interactive=True,
+                                        scale=1,
+                                        elem_id="tb-transform-color-dd",
+                                    )
+                                with gr.Row():
+                                    tb_apply_transform_btn = gr.Button(
+                                        "✨ Apply Transform",
+                                        variant="secondary",
+                                        size="sm",
+                                        scale=2,
+                                        elem_id="tb-apply-transform-btn",
+                                    )
+                                    tb_clear_transform_btn = gr.Button(
+                                        "✖ Clear",
+                                        variant="stop",
+                                        size="sm",
+                                        scale=1,
+                                        elem_id="tb-clear-transform-btn",
+                                    )
+                                tb_transform_status = gr.HTML(value="", elem_id="tb-transform-status")
                             with gr.TabItem("🖨 FOP Preview"):
                                 tb_fop_btn = gr.Button("Render with Apache FOP", variant="primary", size="sm")
                                 tb_fop_html = gr.HTML(
@@ -1030,6 +1265,8 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
                             scale=1,
                             elem_id="tb-inspection",
                         )
+        # Hidden textbox: receives "eid||new_text" from the inline popup editor.
+                        tb_entry_edit = gr.Textbox(visible=False, elem_id="tb-entry-edit")
         # ── END TABLE BROWSER ─────────────────────────────────────────────────
 
         page.load(logger.read_logs, None, logs, every=1)
@@ -1074,26 +1311,23 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
         """ These helper functions hide all other quickstart steps when one step is expanded. """
 
         def _toggle_quickstart_steps(step):
-            steps = ["Step 1: Submit a sample query",
-                     "Step 2: Upload the sample dataset",
+            steps = ["Step 1: Upload the sample dataset",
                      "Step 3: Resubmit the sample query",
                      "Step 4: Monitor the results",
                      "Step 5: Next steps"]
-            visible = [False, False, False, False, False]
+            visible = [False, False, False, False]
             visible[steps.index(step)] = True
             return {
-                step_1: gr.update(visible=visible[0]),
-                step_2: gr.update(visible=visible[1]),
-                step_3: gr.update(visible=visible[2]),
-                step_4: gr.update(visible=visible[3]),
-                step_5: gr.update(visible=visible[4]),
+                step_2: gr.update(visible=visible[0]),
+                step_3: gr.update(visible=visible[1]),
+                step_4: gr.update(visible=visible[2]),
+                step_5: gr.update(visible=visible[3]),
             }
 
-        step_1_btn.click(_toggle_quickstart_steps, [step_1_btn], [step_1, step_2, step_3, step_4, step_5])
-        step_2_btn.click(_toggle_quickstart_steps, [step_2_btn], [step_1, step_2, step_3, step_4, step_5])
-        step_3_btn.click(_toggle_quickstart_steps, [step_3_btn], [step_1, step_2, step_3, step_4, step_5])
-        step_4_btn.click(_toggle_quickstart_steps, [step_4_btn], [step_1, step_2, step_3, step_4, step_5])
-        step_5_btn.click(_toggle_quickstart_steps, [step_5_btn], [step_1, step_2, step_3, step_4, step_5])
+        step_2_btn.click(_toggle_quickstart_steps, [step_2_btn], [step_2, step_3, step_4, step_5])
+        step_3_btn.click(_toggle_quickstart_steps, [step_3_btn], [step_2, step_3, step_4, step_5])
+        step_4_btn.click(_toggle_quickstart_steps, [step_4_btn], [step_2, step_3, step_4, step_5])
+        step_5_btn.click(_toggle_quickstart_steps, [step_5_btn], [step_2, step_3, step_4, step_5])
 
         """ These helper functions hide all settings when collapsed, and displays all settings when expanded. """
 
@@ -1348,30 +1582,148 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
         
         """ These helper functions upload and clear the documents and webpages to/from the ChromaDB. """
 
-        def _build_table_list_html(catalog):
-            """Build the expanded table list as an HTML string.
-            Each row is clickable and writes its 0-based index into tb_list_click
-            via a small inline script, which triggers _show_table via gr.Number.change.
-            Columns: #, Table name, Page, Rows.
+        def _build_table_list_html(catalog, show_text=False):
+            """Build the expanded list as an HTML string.
+
+            Default (show_text=False): tables only — one clickable row per table.
+            When show_text=True: full document sequence loaded from doc_segments.json;
+            paragraph rows are tagged "X" (non-clickable), table rows are tagged "T"
+            (clickable, same behaviour as the tables-only view).
             """
             if not catalog:
                 return ""
             import html as _html
-            rows_html = []
-            for i, t in enumerate(catalog):
-                title    = (t.get("title") or "").strip() or f"Table {i + 1}"
-                pg       = t.get("page_idx", -1)
-                pg_label = f"{pg + 1}" if pg >= 0 else "—"
-                n_rows   = len(t.get("cell_rows") or [])
-                rows_html.append(
-                    f'<tr class="tbl-list-row" onclick="_tblListSelect(this,{i})">'
-                    f'<td class="tbl-list-num">{i + 1}</td>'
-                    f'<td class="tbl-list-name">{_html.escape(title)}</td>'
-                    f'<td class="tbl-list-pg">{pg_label}</td>'
-                    f'<td class="tbl-list-rows">{n_rows}</td>'
-                    f'</tr>'
-                )
-            return (
+            import json as _json
+
+            if show_text:
+                # Load the ordered document sequence from disk
+                segments_path = os.path.join(database.DATA_DIR, "doc_segments.json")
+                segments: list = []
+                if os.path.exists(segments_path):
+                    try:
+                        with open(segments_path, encoding="utf-8") as _f:
+                            segments = _json.load(_f)
+                    except Exception:
+                        pass
+
+                # table_index in segments → position in catalog list
+                tidx_to_catidx = {t.get("table_index", i): i for i, t in enumerate(catalog)}
+
+                # ── Build flat row list ────────────────────────────────
+                flat_rows = []
+                x_count = 0
+                t_count = 0
+                for seg in sorted(segments, key=lambda s: s.get("seq", 0)):
+                    if seg["type"] == "paragraph":
+                        text = (seg.get("text") or "").strip()
+                        if not text:
+                            continue
+                        x_count += 1
+                        flat_rows.append({
+                            "type":             "paragraph",
+                            "page_idx":         seg.get("page_idx", -1),
+                            "label":            f"X{x_count}",
+                            "text":             text,
+                            "seq":              seg.get("seq", -1),
+                            "annotated_image_path": seg.get("annotated_image_path", ""),
+                        })
+                    elif seg["type"] == "table":
+                        tidx  = seg.get("table_index", -1)
+                        cat_i = tidx_to_catidx.get(tidx, tidx)
+                        t_count += 1
+                        t_ent = catalog[cat_i] if 0 <= cat_i < len(catalog) else {}
+                        flat_rows.append({
+                            "type":     "table",
+                            "page_idx": t_ent.get("page_idx", seg.get("page_idx", -1)),
+                            "label":    f"T{t_count}",
+                            "title":    (t_ent.get("title") or seg.get("title") or "").strip()
+                                        or f"Table {tidx + 1}",
+                            "pg_label": (f"{t_ent.get('page_idx', -1) + 1}"
+                                         if t_ent.get("page_idx", -1) >= 0 else "—"),
+                            "n_rows":   len(t_ent.get("cell_rows") or []),
+                            "cat_i":    cat_i,
+                        })
+
+                # ── Pre-pass: mark joint page groups ──────────────────
+                # Consecutive rows that share a page AND include both types
+                # get a spanning connector cell in column 0.
+                i = 0
+                while i < len(flat_rows):
+                    pg = flat_rows[i]["page_idx"]
+                    if pg < 0:
+                        flat_rows[i]["connector"] = "none"
+                        i += 1
+                        continue
+                    j = i + 1
+                    while j < len(flat_rows) and flat_rows[j]["page_idx"] == pg:
+                        j += 1
+                    grp = flat_rows[i:j]
+                    has_both = (any(r["type"] == "paragraph" for r in grp)
+                                and any(r["type"] == "table" for r in grp))
+                    if has_both and len(grp) >= 2:
+                        flat_rows[i]["connector"]       = "start"
+                        flat_rows[i]["connector_span"]  = len(grp)
+                        flat_rows[i]["connector_label"] = f"p.{pg + 1}"
+                        for k in range(i + 1, j):
+                            flat_rows[k]["connector"] = "cont"
+                    else:
+                        for k in range(i, j):
+                            flat_rows[k]["connector"] = "none"
+                    i = j
+
+                # ── Render rows ────────────────────────────────────────
+                rows_html = []
+                for rd in flat_rows:
+                    conn = rd.get("connector", "none")
+                    if conn == "start":
+                        conn_td = (f'<td class="tbl-conn-joint" rowspan="{rd["connector_span"]}">'
+                                   f'<div class="tbl-conn-bar">{rd["connector_label"]}</div></td>')
+                    elif conn == "cont":
+                        conn_td = ""
+                    else:
+                        conn_td = '<td class="tbl-conn-empty"></td>'
+
+                    if rd["type"] == "paragraph":
+                        short = (rd["text"][:80] + "\u2026") if len(rd["text"]) > 80 else rd["text"]
+                        rows_html.append(
+                            f'<tr class="tbl-list-row tbl-list-text" onclick="_paraListSelect(this,{rd["seq"]})">'
+                            f'{conn_td}'
+                            f'<td class="tbl-list-tag tbl-list-tag-x"><span>X</span></td>'
+                            f'<td class="tbl-list-num tbl-list-xnum">{rd["label"]}</td>'
+                            f'<td class="tbl-list-name tbl-list-textcontent" colspan="2">{_html.escape(short)}</td>'
+                            f'</tr>'
+                        )
+                    else:
+                        rows_html.append(
+                            f'<tr class="tbl-list-row tbl-list-table" onclick="_tblListSelect(this,{rd["cat_i"]})">'
+                            f'{conn_td}'
+                            f'<td class="tbl-list-tag tbl-list-tag-t"><span>T</span></td>'
+                            f'<td class="tbl-list-num tbl-list-tnum">{rd["label"]}</td>'
+                            f'<td class="tbl-list-name">{_html.escape(rd["title"])}</td>'
+                            f'<td class="tbl-list-pg">{rd["pg_label"]}</td>'
+                            f'</tr>'
+                        )
+                th_first = '<th></th><th>Tag</th><th>#</th>'
+                th_rest  = '<th>Name</th><th>Page</th>'
+            else:
+                rows_html = []
+                for i, t in enumerate(catalog):
+                    title    = (t.get("title") or "").strip() or f"Table {i + 1}"
+                    pg       = t.get("page_idx", -1)
+                    pg_label = f"{pg + 1}" if pg >= 0 else "—"
+                    n_rows   = len(t.get("cell_rows") or [])
+                    rows_html.append(
+                        f'<tr class="tbl-list-row" onclick="_tblListSelect(this,{i})">'
+                        f'<td class="tbl-list-num">{i + 1}</td>'
+                        f'<td class="tbl-list-name">{_html.escape(title)}</td>'
+                        f'<td class="tbl-list-pg">{pg_label}</td>'
+                        f'<td class="tbl-list-rows">{n_rows}</td>'
+                        f'</tr>'
+                    )
+                th_first = '<th>#</th>'
+                th_rest  = '<th>Name</th><th>Page</th><th>Rows</th>'
+
+            _css = (
                 '<style>'
                 '#tb-table-list{margin:6px 0 10px 0;border-radius:6px;overflow:hidden;border:1px solid #444;}'
                 '#tb-table-list table{width:100%;border-collapse:collapse;font-family:monospace;font-size:12px;}'
@@ -1381,43 +1733,69 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
                 '.tbl-list-row:hover{background:#2d3a4a;color:#fff;}'
                 '.tbl-list-active{background:#1a3a5c!important;color:#7ec8e3!important;}'
                 '.tbl-list-num{color:#888;width:36px;padding:5px 8px;text-align:right;}'
+                '.tbl-list-xnum{color:#f5c542;width:40px;font-size:10px;text-align:right;}'
+                '.tbl-list-tnum{color:#7ec8e3;width:40px;font-size:10px;text-align:right;}'
+                '.tbl-conn-empty{width:18px;padding:0 4px;border-right:1px solid #2a2a2a;}'
+                '.tbl-conn-joint{width:18px;padding:0 3px;vertical-align:middle;text-align:center;'
+                'background:rgba(52,152,219,0.10);border-left:2px solid #3498db;border-right:2px solid #3498db;}'
+                '.tbl-conn-bar{writing-mode:vertical-lr;transform:rotate(180deg);font-size:9px;'
+                'color:#3498db;font-weight:700;letter-spacing:.08em;}'
+                '.tbl-list-tag{width:34px;padding:4px 6px;text-align:center;}'
+                '.tbl-list-tag span{display:inline-block;font-weight:700;font-size:10px;letter-spacing:.05em;'
+                'border-radius:3px;padding:2px 5px;}'
+                '.tbl-list-tag-x span{background:#4a3a00;color:#f5c542;border:1px solid #f5c542;}'
+                '.tbl-list-tag-t span{background:#0d2e44;color:#7ec8e3;border:1px solid #7ec8e3;}'
+                '.tbl-list-text{cursor:pointer;}'
+                '.tbl-list-textcontent{color:#aaa!important;font-style:italic;}'
                 '.tbl-list-name{padding:5px 12px;max-width:520px;overflow:hidden;'
                 'text-overflow:ellipsis;white-space:nowrap;}'
                 '.tbl-list-pg{color:#aaa;width:52px;padding:5px 8px;text-align:center;}'
                 '.tbl-list-rows{color:#aaa;width:52px;padding:5px 8px;text-align:center;}'
                 '</style>'
-                '<script>'
-                'function _tblListSelect(row, idx) {'
-                '  var el = document.querySelector(\'#tb-list-click input\');'
-                '  if (el) { el.value = idx; el.dispatchEvent(new Event(\'input\', {bubbles:true})); }'
-                '  document.querySelectorAll(\'.tbl-list-row\').forEach(function(r) {'
-                '    r.classList.remove(\'tbl-list-active\');'
-                '  });'
-                '  row.classList.add(\'tbl-list-active\');'
-                '}'
-                '</script>'
-                '<table>'
-                '<thead><tr>'
-                '<th>#</th><th>Table name</th><th>Page</th><th>Rows</th>'
-                '</tr></thead>'
-                '<tbody>' + ''.join(rows_html) + '</tbody>'
-                '</table>'
+            )
+            _js = ""
+            return (
+                _css + _js
+                + '<table><thead><tr>'
+                + th_first
+                + th_rest
+                + '</tr></thead><tbody>'
+                + ''.join(rows_html)
+                + '</tbody></table>'
             )
 
         _tb_list_visible = [False]  # mutable closure flag
 
-        def _toggle_table_list(current_visible, catalog):
-            """Toggle the expanded table list panel."""
+        def _toggle_table_list(current_visible, catalog, show_text):
+            """Toggle the expanded table list panel and its Text+Tables checkbox."""
             new_vis = not current_visible
-            html = _build_table_list_html(catalog) if new_vis else ""
+            html = _build_table_list_html(catalog, show_text=show_text) if new_vis else ""
             label = "▲ List" if new_vis else "≡ List"
-            return new_vis, gr.update(value=html, visible=new_vis), gr.update(value=label)
+            return (
+                new_vis,
+                gr.update(value=html, visible=new_vis),
+                gr.update(value=label),
+                gr.update(visible=new_vis),
+            )
 
         _tb_list_vis_state = gr.State(False)
         tb_list_toggle.click(
             _toggle_table_list,
-            inputs=[_tb_list_vis_state, all_tables_state],
-            outputs=[_tb_list_vis_state, tb_table_list, tb_list_toggle],
+            inputs=[_tb_list_vis_state, all_tables_state, tb_show_text_cb],
+            outputs=[_tb_list_vis_state, tb_table_list, tb_list_toggle, tb_show_text_cb],
+        )
+
+        def _on_show_text_toggle(show_text, current_vis, catalog):
+            """Rebuild the list HTML immediately when the Text+Tables checkbox changes."""
+            if not current_vis:
+                return gr.update()
+            html = _build_table_list_html(catalog, show_text=show_text)
+            return gr.update(value=html, visible=True)
+
+        tb_show_text_cb.change(
+            _on_show_text_toggle,
+            inputs=[tb_show_text_cb, _tb_list_vis_state, all_tables_state],
+            outputs=[tb_table_list],
         )
 
         def _set_vlm_annotate(enabled):
@@ -1610,7 +1988,7 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
 
             _empty = gr.update(value=None)
             if selected_idx is None or not all_tables or selected_idx >= len(all_tables):
-                return _empty, _empty, _empty, _empty, gr.update(value=""), _empty, gr.update(value=""), _empty, _empty, {}
+                return _empty, _empty, _empty, _empty, gr.update(value=""), _empty, gr.update(value=""), _empty, _empty, {}, gr.update(value="")
 
             t = all_tables[selected_idx]
 
@@ -1621,19 +1999,28 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
             if title:
                 plain = f"[Title: {title}]\n\n{plain}"
 
-            # Top-middle: CALS XML (prefer annotated version from inspection)
+            # Top-middle: CALS XML
+            # clean_xml  — original CALS with only structural attributes (bold, indent, colspan…)
+            #              shown in the editable code panel so the user can edit clean markup
+            # display_xml — annotated version with verify="ok"/"unconfirmed" baked in,
+            #              used only for the rendered colour-coded view
             inspection = t.get("inspection") or {}
-            cals_xml = (inspection.get("annotated_xml") if isinstance(inspection, dict) else None) or t.get("xml", "")
+            clean_xml   = t.get("xml", "")
+            display_xml = (inspection.get("annotated_xml") if isinstance(inspection, dict) else None) or clean_xml
 
             # Top-right: full inspection report
             inspection_data = inspection if isinstance(inspection, dict) else {}
 
-            # Bottom-left: original page PNG
-            orig_path = t.get("image_path", "") or None
-            orig_img  = orig_path if (orig_path and os.path.exists(orig_path)) else None
+            # Bottom-left: original page PNG (prefer joint annotated version if available)
+            annot_path = t.get("annotated_image_path", "") or None
+            orig_path  = t.get("image_path", "") or None
+            orig_img   = next(
+                (p for p in [annot_path, orig_path] if p and os.path.exists(p)), None
+            )
+            orig_img = database._draw_bbox_on_image(orig_img, t.get("bbox"), color="blue")
 
             # Left panel + dark view panel
-            table_html, xml_panel_html = database._cals_to_interactive_html(cals_xml, theme=theme)
+            table_html, xml_panel_html = database._cals_to_interactive_html(display_xml, theme=theme, clean_xml=clean_xml)
 
             # Bottom-right: annotated diff PNG (fall back to original page)
             diff_path = (inspection.get("annotated_image_path") if isinstance(inspection, dict) else None)
@@ -1651,7 +2038,7 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
 
             return (
                 gr.update(value=plain),
-                gr.update(value=cals_xml),        # tb_cals_xml  — raw editable text
+                gr.update(value=clean_xml),        # tb_cals_xml  — raw editable text (clean, no verify attrs)
                 gr.update(value=inspection_data),
                 gr.update(value=orig_img),
                 gr.update(value=table_html),       # tb_cals_html — left rendered panel
@@ -1785,6 +2172,72 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
                     except Exception as _ep:
                         print(f"[agent] cache build failed for {_pp}: {_ep}")
 
+            # Resolve the LM Studio model name ONCE here, before the per-table loop,
+            # so neither _annotate_entry_styles_with_vlm nor _reconcile_with_llm
+            # ever calls models.list() during the loop.  The result is stored in
+            # database._vlm_model_id_cache so it is picked up automatically.
+            _resolved_model = "local-model"
+            try:
+                from openai import OpenAI as _OpenAI
+                _lm_client = _OpenAI(base_url=database.VLM_LMSTUDIO_URL, api_key="lm-studio")
+                _lm_models = _lm_client.models.list()
+                _resolved_model = _lm_models.data[0].id if _lm_models.data else "local-model"
+                database._vlm_model_id_cache[database.VLM_LMSTUDIO_URL] = _resolved_model
+                log_lines.append(f"[cache] LM Studio model: {_resolved_model}")
+            except Exception as _em:
+                log_lines.append(f"[cache] LM Studio not reachable — VLM will be skipped ({_em})")
+
+            # Derive a short slug from the model name to use as the catalog key.
+            # Each distinct model version gets its own key so no run ever overwrites
+            # a previous model's results.  The legacy bare "xml_vlm" key (written by
+            # earlier Qwen2.5-VL runs) is never touched again — it shows up in the
+            # Review tab labelled "Qwen" automatically via _model_label().
+            import re as _re
+            _mid_lower = _resolved_model.lower()
+            if "gemma" in _mid_lower:
+                # e.g. gemma-3-12b  →  "gemma3_12b", or just "gemma" if no version found
+                _gver = _re.search(r"gemma[-_]?(\d+(?:[._]\d+)?)", _mid_lower)
+                _model_slug = "gemma" + _gver.group(1).replace(".", "").replace("-", "").replace("_", "") if _gver else "gemma"
+            elif "qwen" in _mid_lower:
+                # e.g. qwen2.5-vl-7b → "qwen25vl", qwen3.5-35b-a3b → "qwen35"
+                _qver = _re.search(r"qwen(\d+(?:[._]\d+)*)", _mid_lower)
+                _qver_str = _qver.group(1).replace(".", "").replace("_", "") if _qver else ""
+                _qsuffix = "vl" if "vl" in _mid_lower else ""
+                _model_slug = f"qwen{_qver_str}{_qsuffix}" if _qver_str else "qwen"
+            elif "phi" in _mid_lower:
+                _pver = _re.search(r"phi[-_]?(\d+(?:[._]\d+)?)", _mid_lower)
+                _model_slug = "phi" + _pver.group(1).replace(".", "").replace("-", "").replace("_", "") if _pver else "phi"
+            elif "llama" in _mid_lower:
+                _lver = _re.search(r"llama[-_]?(\d+(?:[._]\d+)?)", _mid_lower)
+                _model_slug = "llama" + _lver.group(1).replace(".", "").replace("-", "").replace("_", "") if _lver else "llama"
+            elif "mistral" in _mid_lower:
+                _model_slug = "mistral"
+            else:
+                _model_slug = _re.sub(r"[^a-z0-9]", "_", _mid_lower)[:12].strip("_") or "vlm"
+            # Storage keys for this run (always non-empty slug now)
+            _vlm_key       = f"xml_vlm_{_model_slug}"
+            _conflicts_key = f"annotation_conflicts_{_model_slug}"
+            _method_suffix = _model_slug
+            log_lines.append(f"[cache] VLM catalog key: {_vlm_key}")
+
+            # Pre-flight sanity: count how many tables already have this model's key.
+            _already_done = sum(1 for e in all_tables if e.get(_vlm_key))
+            if _already_done == total:
+                log_lines.append(
+                    f"⚠ ALL {total} tables already annotated with key '{_vlm_key}'. "
+                    f"If you want to re-run, clear that key first. "
+                    f"Is the correct model loaded in LM Studio?"
+                )
+            elif _already_done > 0:
+                log_lines.append(
+                    f"[cache] {_already_done}/{total} tables already have '{_vlm_key}' — "
+                    f"those will be skipped, {total - _already_done} remaining."
+                )
+            else:
+                log_lines.append(
+                    f"[cache] 0/{total} tables have '{_vlm_key}' — full run."
+                )
+
             # Stream the pre-flight status before starting per-table work
             yield (
                 all_tables,
@@ -1828,43 +2281,47 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
                         log_lines[-1] += " ⚠ pdf-err"
                         print(f"[agent] table {i} pdfplumber: {_e}")
 
-                # Step 2 — VLM annotation (optional; skipped if image missing or LM Studio down)
-                vlm_xml = None
-                if img_path and os.path.exists(img_path):
+                # Step 2 — VLM annotation.
+                # If this model already annotated this table (key present and non-empty)
+                # reuse the cached result — preserves Qwen work when running Gemma and
+                # vice versa.  Skip entirely if image is missing or LM Studio is down.
+                vlm_xml = entry.get(_vlm_key) or None
+                if vlm_xml:
+                    method_tag = f"pdf+{_method_suffix}"
+                    log_lines[-1] = (
+                        f"[{i + 1}/{total}] {title} [{_vlm_key} cached] ✓"
+                    )
+                elif img_path and os.path.exists(img_path):
                     try:
                         vlm_xml = database._annotate_entry_styles_with_vlm(
                             cals_xml, img_path, lmstudio_url=database.VLM_LMSTUDIO_URL
                         )
-                        method_tag = "pdf+vlm"
+                        method_tag = f"pdf+{_method_suffix}"
                     except Exception as _e:
                         method_tag = "pdf"
                         print(f"[agent] table {i} VLM skipped: {_e}")
                 else:
                     method_tag = "pdf"
 
-                # Step 3 — Compare and find conflicts
+                # Step 3 — Compare and find conflicts (for review panel only).
+                # We do NOT call _reconcile_with_llm here: the reconciliation
+                # rules always say "trust pdfplumber for bold/indent", so a
+                # third LLM inference per table would just confirm what
+                # pdfplumber already produced. Skipping it saves ~63 inferences
+                # (the dominant time cost). The Review tab still shows all
+                # conflicts so they can be inspected manually.
                 conflicts = database._compare_annotation_sets(pdf_xml, vlm_xml) if vlm_xml else []
+                final_xml = pdf_xml  # pdfplumber is authoritative
 
-                # Step 4 — LLM reconciliation (text-only call, no image)
-                final_xml = pdf_xml  # default: trust pdfplumber
-                resolved = 0
-                if conflicts:
-                    try:
-                        decisions = database._reconcile_with_llm(
-                            title, conflicts, database.VLM_LMSTUDIO_URL
-                        )
-                        if decisions:
-                            final_xml = database._apply_reconciliation(pdf_xml, decisions)
-                            resolved = len(decisions)
-                    except Exception as _e:
-                        print(f"[agent] table {i} reconcile: {_e}")
-
-                # Step 5 — Write back; store intermediate XMLs for review panel
+                # Step 4 — Write back.
+                # - xml / xml_pdfplumber are always updated (pdfplumber is authoritative).
+                # - VLM result is written to the model-specific key only; other models'
+                #   keys (e.g. xml_vlm for Qwen when running Gemma) are left untouched.
                 all_tables[i]["xml"] = final_xml
                 all_tables[i]["xml_pdfplumber"] = pdf_xml
-                all_tables[i]["xml_vlm"] = vlm_xml or ""
+                all_tables[i][_vlm_key] = vlm_xml or ""
+                all_tables[i][_conflicts_key] = len(conflicts)
                 all_tables[i]["annotation_version"] = method_tag
-                all_tables[i]["annotation_conflicts"] = len(conflicts)
 
                 # Persist catalog every 5 tables (not every table) to reduce I/O;
                 # always write on the last table so nothing is lost.
@@ -1876,14 +2333,31 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
                         print(f"[agent] catalog save: {_e}")
 
                 conflict_info = (
-                    f" {len(conflicts)} conflicts→{resolved} resolved" if conflicts else ""
+                    f" {len(conflicts)} conflicts" if conflicts else ""
                 )
                 log_lines[-1] = (
                     f"[{i + 1}/{total}] {title} [{method_tag}]{conflict_info} ✓"
                 )
+                # Yield after each table so the ✓ is visible immediately in the UI
+                # (without this, the completion marker only shows on the next
+                # iteration's pre-work yield — meaning the last table never shows ✓
+                # unless the post-loop yield fires successfully).
+                yield (
+                    all_tables,
+                    gr.update(), gr.update(), gr.update(), gr.update(), gr.update(),
+                    gr.update(), gr.update(), gr.update(), gr.update(), gr.update(),
+                    gr.update(),
+                    _agent_status_html(log_lines, i + 1, total),
+                )
 
-            # Re-render the currently selected table with updated annotations
-            show_outs = _show_table(selected_idx, all_tables, theme)
+            # Re-render the currently selected table with updated annotations.
+            # Wrap in try/except so a rendering error never prevents the
+            # completion message from reaching the UI.
+            try:
+                show_outs = _show_table(selected_idx, all_tables, theme)
+            except Exception as _e:
+                print(f"[agent] final _show_table: {_e}")
+                show_outs = tuple(gr.update() for _ in range(11))
             log_lines.append(f"✓ Agent complete — {total} tables processed.")
             yield (all_tables, *show_outs, _agent_status_html(log_lines, total, total))
 
@@ -1924,6 +2398,49 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
             outputs=[tb_plain_text, tb_cals_xml, tb_inspection, tb_orig_img, tb_cals_html, tb_diff_img, tb_diff_ts, tb_cals_xml_view, tb_orig_img_r, current_table_state, tb_annot_review],
         )
 
+        def _show_para_page(seq_val):
+            """Show the page image for a paragraph row clicked in the list view."""
+            import json as _json
+            _noop = gr.update()
+            if seq_val is None or seq_val < 0:
+                return _noop, _noop, _noop, _noop, _noop, _noop, _noop, _noop, _noop, {}, _noop
+            segments_path = os.path.join(database.DATA_DIR, "doc_segments.json")
+            if not os.path.exists(segments_path):
+                return _noop, _noop, _noop, _noop, _noop, _noop, _noop, _noop, _noop, {}, _noop
+            try:
+                with open(segments_path, encoding="utf-8") as _f:
+                    segments = _json.load(_f)
+            except Exception:
+                return _noop, _noop, _noop, _noop, _noop, _noop, _noop, _noop, _noop, {}, _noop
+            seg = next((s for s in segments if s.get("seq") == int(seq_val) and s.get("type") == "paragraph"), None)
+            if seg is None:
+                return _noop, _noop, _noop, _noop, _noop, _noop, _noop, _noop, _noop, {}, _noop
+            img_path   = seg.get("image_path", "") or None
+            annot_path = seg.get("annotated_image_path", "") or None
+            img = next((p for p in [annot_path, img_path] if p and os.path.exists(p)), None)
+            img = database._draw_bbox_on_image(img, seg.get("bbox"), color="red")
+            text = seg.get("text", "")
+            empty_html = "<p style='color:#888;font-family:sans-serif;'>No XML — text paragraph</p>"
+            return (
+                gr.update(value=text),    # tb_plain_text
+                gr.update(value=""),      # tb_cals_xml
+                gr.update(value={}),      # tb_inspection
+                gr.update(value=img),     # tb_orig_img
+                gr.update(value=empty_html),  # tb_cals_html
+                gr.update(value=img),     # tb_diff_img
+                gr.update(value=""),      # tb_diff_ts
+                gr.update(value=empty_html),  # tb_cals_xml_view
+                gr.update(value=img),     # tb_orig_img_r
+                {},                        # current_table_state
+                gr.update(value=""),      # tb_annot_review
+            )
+
+        tb_para_click.change(
+            _show_para_page,
+            inputs=[tb_para_click],
+            outputs=[tb_plain_text, tb_cals_xml, tb_inspection, tb_orig_img, tb_cals_html, tb_diff_img, tb_diff_ts, tb_cals_xml_view, tb_orig_img_r, current_table_state, tb_annot_review],
+        )
+
         def _rerender_cals(xml_str, table_meta, theme="verify"):
             """Live re-render rendered table + XML view + diff for the focused table only."""
             empty_html = "<p style='color:#888;font-family:sans-serif;'>No XML</p>"
@@ -1932,7 +2449,7 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
             try:
                 # Re-verify against the original PDF (scoped to this table only)
                 annotated_xml, new_diff = database._recheck_xml(xml_str, table_meta or {})
-                table_html, xml_panel_html = database._cals_to_interactive_html(annotated_xml, theme=theme)
+                table_html, xml_panel_html = database._cals_to_interactive_html(annotated_xml, theme=theme, clean_xml=xml_str)
                 diff_update = gr.update(value=new_diff) if new_diff else gr.update()
                 ts_update = gr.update(value=_diff_ts_html(new_diff)) if new_diff else gr.update(value="")
                 return gr.update(value=table_html), gr.update(value=xml_panel_html), diff_update, ts_update
@@ -1951,6 +2468,135 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
             outputs=[tb_cals_html, tb_cals_xml_view, tb_diff_img, tb_diff_ts],
         )
 
+        def _save_xml(xml_str, all_tables, selected_idx):
+            updated, msg = database.save_table_xml(all_tables, selected_idx, xml_str)
+            color = "#1a7a1a" if msg.startswith("✅") else "#7a1a1a"
+            status_html = (
+                f"<p style='font-family:sans-serif;font-size:12px;color:{color};"
+                f"margin:4px 0;'>{msg}</p>"
+            )
+            return updated, status_html
+
+        tb_save_btn.click(
+            _save_xml,
+            inputs=[tb_cals_xml, all_tables_state, table_selector],
+            outputs=[all_tables_state, tb_save_status],
+        )
+
+        def _show_transform_status(selected_idx, all_tables):
+            """Reflect the stored transform for the current table in the transform controls."""
+            if selected_idx is None or not all_tables or selected_idx >= len(all_tables):
+                return gr.update(value=""), gr.update(value="none"), gr.update(value="EBF3FB")
+            tr     = (all_tables[int(selected_idx)].get("transform") or {})
+            ttype  = tr.get("type",  "none") or "none"
+            color  = tr.get("color", "EBF3FB") or "EBF3FB"
+            if ttype == "none":
+                return gr.update(value=""), gr.update(value="none"), gr.update(value="EBF3FB")
+            _cnames = {
+                "EBF3FB": "light blue",  "E8F5E9": "light green",
+                "FFFDE7": "light yellow", "EDE7F6": "lavender", "FCE4EC": "light pink",
+            }
+            badge = (
+                f"<span style='font-family:sans-serif;font-size:11px;color:#2ecc71;'>"
+                f"\u2705 Transform: <b>{ttype}</b> \u2013 {_cnames.get(color, color)}</span>"
+            )
+            return gr.update(value=badge), gr.update(value=ttype), gr.update(value=color)
+
+        def _apply_table_transform(transform_type, color, all_tables, selected_idx):
+            """Store (or clear) a style transform in the selected table's catalog entry."""
+            import json as _json, copy as _copy
+            if selected_idx is None or not all_tables or selected_idx >= len(all_tables):
+                return (
+                    all_tables,
+                    "<span style='color:#c00;font-family:sans-serif;font-size:11px;'>"
+                    "No table selected.</span>",
+                )
+            idx     = int(selected_idx)
+            updated = _copy.deepcopy(all_tables)
+            _cnames = {
+                "EBF3FB": "light blue",  "E8F5E9": "light green",
+                "FFFDE7": "light yellow", "EDE7F6": "lavender", "FCE4EC": "light pink",
+            }
+            if transform_type == "none":
+                updated[idx].pop("transform", None)
+                badge = "<span style='font-family:sans-serif;font-size:11px;color:#888;'>Transform cleared.</span>"
+            else:
+                updated[idx]["transform"] = {
+                    "type":  transform_type,
+                    "color": (color or "EBF3FB").lstrip("#").upper(),
+                }
+                badge = (
+                    f"<span style='font-family:sans-serif;font-size:11px;color:#2ecc71;'>"
+                    f"\u2705 <b>{transform_type}</b> ({_cnames.get(color, color)}) set on "
+                    f"table {idx + 1}. Will apply on .docx export.</span>"
+                )
+            # Persist so transforms survive a page reload
+            cat_path = os.path.join(database.DATA_DIR, "table_catalog.json")
+            try:
+                with open(cat_path, "w", encoding="utf-8") as _f:
+                    _json.dump(updated, _f, ensure_ascii=False, indent=2)
+            except Exception:
+                pass
+            return updated, badge
+
+        tb_apply_transform_btn.click(
+            _apply_table_transform,
+            inputs=[tb_transform_dd, tb_transform_color_dd, all_tables_state, table_selector],
+            outputs=[all_tables_state, tb_transform_status],
+        )
+        tb_clear_transform_btn.click(
+            lambda at, si: _apply_table_transform("none", "EBF3FB", at, si),
+            inputs=[all_tables_state, table_selector],
+            outputs=[all_tables_state, tb_transform_status],
+        )
+        # Reflect stored transform when navigating between tables
+        table_selector.change(
+            _show_transform_status,
+            inputs=[table_selector, all_tables_state],
+            outputs=[tb_transform_status, tb_transform_dd, tb_transform_color_dd],
+        )
+        tb_list_click.change(
+            _show_transform_status,
+            inputs=[tb_list_click, all_tables_state],
+            outputs=[tb_transform_status, tb_transform_dd, tb_transform_color_dd],
+        )
+
+        def _handle_entry_edit(signal, all_tables, selected_idx, table_meta, theme):
+            """Process inline popup editor save: update one entry, re-verify, re-render."""
+            import copy as _copy
+            empty_html = "<p style='color:#888;font-family:sans-serif;'>No XML</p>"
+            if not signal or "||" not in signal:
+                return gr.update(), gr.update(), gr.update(), all_tables
+            eid, new_text = signal.split("||", 1)
+            eid = eid.strip()
+            updated, new_clean_xml, msg = database.update_entry_text(
+                all_tables, selected_idx, eid, new_text
+            )
+            if not new_clean_xml:
+                return gr.update(), gr.update(), gr.update(), all_tables
+            try:
+                annotated_xml, _ = database._recheck_xml(new_clean_xml, table_meta or {})
+            except Exception:
+                annotated_xml = new_clean_xml
+            try:
+                table_html, xml_panel_html = database._cals_to_interactive_html(
+                    annotated_xml, theme=theme or "verify", clean_xml=new_clean_xml
+                )
+            except Exception:
+                table_html = xml_panel_html = empty_html
+            return (
+                gr.update(value=table_html),
+                gr.update(value=xml_panel_html),
+                gr.update(value=new_clean_xml),
+                updated,
+            )
+
+        tb_entry_edit.change(
+            _handle_entry_edit,
+            inputs=[tb_entry_edit, all_tables_state, table_selector, current_table_state, tb_cals_theme],
+            outputs=[tb_cals_html, tb_cals_xml_view, tb_cals_xml, all_tables_state],
+        )
+
         def _render_fop(xml_str, table_meta, theme="verify"):
             """Re-verify XML against PDF, render through Apache FOP, and refresh all panels."""
             import xml.etree.ElementTree as _ET
@@ -1963,7 +2609,7 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
                 annotated_xml, new_diff = xml_str, None
             # Re-render interactive HTML with updated verify= colours
             try:
-                table_html, xml_panel_html = database._cals_to_interactive_html(annotated_xml, theme=theme)
+                table_html, xml_panel_html = database._cals_to_interactive_html(annotated_xml, theme=theme, clean_xml=xml_str)
             except Exception:
                 table_html = empty_html
                 xml_panel_html = empty_html
@@ -2268,6 +2914,317 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
             outputs=[tb_fop_verify_status],
         )
 
+        def _export_document_pdf(all_tables, theme):
+            """Reconstruct all tables + paragraphs into a single A4 PDF via FOP."""
+            import tempfile, base64 as _b64, os as _os
+
+            # Use neutral "finance" or "minimal" theme for document output;
+            # fall back to theme from UI but strip verify colours by passing
+            # the catalog directly so reconstruct_to_pdf can strip verify= attrs.
+            export_theme = theme if theme in ("finance", "minimal", "ixbrl", "striped") else "finance"
+
+            status_running = (
+                "<span style='font-family:sans-serif;font-size:12px;color:#555;'>"
+                "⏳ Generating full-document PDF…</span>"
+            )
+            yield (
+                gr.update(value=status_running),
+                gr.update(visible=False, value=None),
+            )
+
+            b64_pdf, err = database.reconstruct_to_pdf(
+                table_catalog=all_tables if all_tables else None,
+                theme=export_theme,
+            )
+
+            if err or not b64_pdf:
+                err_html = (
+                    "<span style='font-family:sans-serif;font-size:12px;color:#c00;'>"
+                    f"❌ Export failed: {err or 'unknown error'}</span>"
+                )
+                yield gr.update(value=err_html), gr.update(visible=False, value=None)
+                return
+
+            # Write PDF to a named temp file so Gradio can serve it for download
+            tmp = tempfile.NamedTemporaryFile(
+                delete=False, suffix=".pdf", prefix="document_export_"
+            )
+            tmp.write(_b64.b64decode(b64_pdf))
+            tmp.close()
+
+            ok_html = (
+                "<span style='font-family:sans-serif;font-size:12px;color:#080;'>"
+                "✅ PDF ready — click the file below to download.</span>"
+            )
+            yield gr.update(value=ok_html), gr.update(visible=True, value=tmp.name)
+
+        def _export_document_docx(all_tables):
+            """Write edited table XML back into the original .docx and offer for download."""
+            yield (
+                gr.update(value="<span style='font-family:sans-serif;font-size:12px;color:#555;'>⏳ Writing tables back to .docx\u2026</span>"),
+                gr.update(visible=False, value=None),
+            )
+            out_path, status_msg = database.write_back_to_docx(
+                table_catalog=all_tables if all_tables else None,
+            )
+            if out_path is None:
+                yield (
+                    gr.update(value=f"<span style='font-family:sans-serif;font-size:12px;color:#c00;'>\u274c {status_msg}</span>"),
+                    gr.update(visible=False, value=None),
+                )
+                return
+            ok_html = (
+                f"<span style='font-family:sans-serif;font-size:12px;color:#080;'>"
+                f"{status_msg}</span>"
+            )
+            yield gr.update(value=ok_html), gr.update(visible=True, value=out_path)
+
+        # ── Export preview helpers ────────────────────────────────────────────
+        def _build_export_preview_html(data: dict, export_type: str = "pdf") -> str:
+            """Build styled HTML for the export review panel."""
+            import html as _h
+            if "error" in data:
+                return (
+                    "<div style='background:#1a1a2e;border:1px solid #5c2a2a;border-radius:8px;"
+                    "padding:14px;font-family:sans-serif;font-size:12px;color:#e74c3c;'>"
+                    + _h.escape(data["error"]) + "</div>"
+                )
+
+            ts       = data.get("text_stats", {})
+            trows    = data.get("table_rows", [])
+            n_total  = data.get("total_tables", 0)
+            n_edited = data.get("edited_tables", 0)
+            n_trans  = data.get("transformed_tables", 0)
+            type_icon  = "\U0001f4c4" if export_type == "pdf" else "\U0001f4dd"
+            type_label = "Full Document PDF" if export_type == "pdf" else "Edited .docx"
+
+            # TEDS score bar
+            def _bar(score, self_baseline=False):
+                if score is None:
+                    return "<span style='color:#555;font-size:10px;'>N/A</span>"
+                pct = int(score * 100)
+                col = "#2ecc71" if score >= 0.95 else "#f39c12" if score >= 0.80 else "#e74c3c"
+                dagger = (
+                    "<span title='No pdfplumber baseline \u2014 compared against original extracted XML'"
+                    " style='color:#888;font-size:9px;margin-left:2px;'>\u2020</span>"
+                    if self_baseline else ""
+                )
+                return (
+                    "<div style='display:inline-flex;align-items:center;gap:4px;'>"
+                    "<div style='width:50px;background:#2a2a3e;border-radius:2px;height:7px;'>"
+                    f"<div style='width:{pct}%;background:{col};height:7px;border-radius:2px;'></div></div>"
+                    f"<span style='font-size:10px;color:{col};font-weight:bold;'>{score:.3f}</span>"
+                    + dagger +
+                    "</div>"
+                )
+
+            # stat row for text block
+            def _srow(label, val):
+                return (
+                    "<tr>"
+                    f"<td style='color:#aaa;padding:3px 16px 3px 0;font-size:11px;'>{label}</td>"
+                    f"<td style='color:#eee;font-family:monospace;font-weight:bold;font-size:11px;'>{val:,}</td>"
+                    "</tr>"
+                )
+
+            text_table = (
+                "<table style='border-collapse:collapse;'>"
+                + _srow("Total characters",               ts.get("char_count",  0))
+                + _srow("Total words",                    ts.get("word_count",  0))
+                + _srow("Whitespace characters",          ts.get("ws_count",    0))
+                + _srow("Other chars (punct / symbols)",  ts.get("other_count", 0))
+                + "</table>"
+            )
+
+            SEG_LABEL = (
+                f"{ts.get('seg_count', 0)} paragraph"
+                + ("s" if ts.get('seg_count', 1) != 1 else "")
+                + " \u2014 read-only from source"
+            )
+
+            color_names = {
+                "EBF3FB": "light blue",  "E8F5E9": "light green",
+                "FFFDE7": "light yellow", "EDE7F6": "lavender", "FCE4EC": "light pink",
+            }
+
+            tbody_html = ""
+            for r in trows:
+                edited_cell = (
+                    "<span style='background:#1a3a60;color:#7ec8e3;border:1px solid #3a6a9a;"
+                    "border-radius:3px;padding:1px 4px;font-size:9px;font-weight:700;'>\u270f edited</span>"
+                    if r["edited"] else
+                    "<span style='color:#444;font-size:10px;'>\u2014</span>"
+                )
+                if r["has_transform"]:
+                    cname = color_names.get(r.get("transform_color", ""), r.get("transform_color", ""))
+                    label = r["transform_type"] + (f" ({cname})" if cname else "")
+                    tr_cell = (
+                        "<span style='background:#1a3a1a;color:#2ecc71;border:1px solid #2a6a2a;"
+                        "border-radius:3px;padding:1px 4px;font-size:9px;font-weight:700;'>"
+                        "\U0001f3a8 " + _h.escape(label) + "</span>"
+                    )
+                else:
+                    tr_cell = "<span style='color:#444;font-size:10px;'>\u2014</span>"
+                title_esc = _h.escape(r["title"])
+                tbody_html += (
+                    "<tr style='border-bottom:1px solid #252535;'>"
+                    f"<td style='color:#666;padding:5px 8px;font-size:10px;text-align:right;'>{r['index'] + 1}</td>"
+                    f"<td style='color:#ddd;padding:5px 10px;font-size:11px;max-width:210px;"
+                    f"overflow:hidden;text-overflow:ellipsis;white-space:nowrap;' title='{title_esc}'>{title_esc}</td>"
+                    f"<td style='padding:5px 8px;text-align:center;'>{edited_cell}</td>"
+                    f"<td style='padding:5px 8px;'>{tr_cell}</td>"
+                    f"<td style='padding:5px 8px;'>{_bar(r['teds_full'],  r.get('baseline_is_self', False))}</td>"
+                    f"<td style='padding:5px 8px;'>{_bar(r['teds_struct'], r.get('baseline_is_self', False))}</td>"
+                    "</tr>"
+                )
+
+            summary_parts = [f"<b style='color:#eee;'>{n_total}</b>&nbsp;tables"]
+            if n_edited:
+                summary_parts.append(f"<b style='color:#7ec8e3;'>{n_edited}</b>&nbsp;edited")
+            if n_trans:
+                summary_parts.append(f"<b style='color:#2ecc71;'>{n_trans}</b>&nbsp;transformed")
+
+            HDR = "border-bottom:1px solid #2a2a4a;padding-bottom:4px;margin-bottom:8px;"
+            SEC_HDR = (
+                "font-size:11px;font-weight:700;text-transform:uppercase;"
+                "letter-spacing:.07em;color:#7ec8e3;"
+            )
+
+            return (
+                "<div style='background:#1a1a2e;border:1px solid #3a3a5c;border-radius:8px;"
+                "padding:16px 20px;margin:6px 0;font-family:sans-serif;'>"
+
+                # Header
+                "<div style='display:flex;justify-content:space-between;align-items:center;"
+                "margin-bottom:14px;'>"
+                f"<span style='color:#7ec8e3;font-size:14px;font-weight:bold;'>"
+                f"\U0001f4cb Export Preview &nbsp;\u2014&nbsp; {type_icon} {_h.escape(type_label)}</span>"
+                "<span style='color:#555;font-size:10px;'>Review changes before confirming export</span>"
+                "</div>"
+
+                # Text segments
+                f"<div style='margin-bottom:16px;'>"
+                f"<div style='{SEC_HDR}{HDR}'>"
+                f"Text Segments &nbsp;<span style='color:#555;font-weight:400;text-transform:none;font-size:10px;'>{_h.escape(SEG_LABEL)}</span></div>"
+                + text_table +
+                "</div>"
+
+                # Table segments
+                "<div>"
+                f"<div style='{SEC_HDR}{HDR}'>"
+                "Table Segments &nbsp;"
+                f"<span style='color:#555;font-weight:400;text-transform:none;font-size:10px;'>"
+                + "&nbsp;\u00b7&nbsp;".join(summary_parts) +
+                "</span></div>"
+                "<div style='overflow-x:auto;'>"
+                "<table style='border-collapse:collapse;width:100%;'>"
+                "<thead><tr style='background:#1e1e2e;'>"
+                "<th style='color:#555;padding:4px 8px;font-size:10px;text-align:right;font-weight:600;'>#</th>"
+                "<th style='color:#555;padding:4px 10px;font-size:10px;text-align:left;font-weight:600;'>Title</th>"
+                "<th style='color:#555;padding:4px 8px;font-size:10px;font-weight:600;'>Edited</th>"
+                "<th style='color:#555;padding:4px 8px;font-size:10px;text-align:left;font-weight:600;'>Transform</th>"
+                "<th style='color:#555;padding:4px 8px;font-size:10px;font-weight:600;' "
+                "title='TEDS full vs pdfplumber baseline'>TEDS full</th>"
+                "<th style='color:#555;padding:4px 8px;font-size:10px;font-weight:600;' "
+                "title='TEDS structural (span grid only)'>TEDS struct</th>"
+                "</tr></thead>"
+                f"<tbody>{tbody_html}</tbody>"
+                "</table></div>"
+                "<div style='color:#444;font-size:10px;margin-top:6px;'>"
+                "TEDS vs pdfplumber baseline &nbsp;\u2014&nbsp; "
+                "\u2265\u202f0.95&thinsp;<span style='color:#2ecc71;'>\u25cf</span>&ensp;"
+                "\u2265\u202f0.80&thinsp;<span style='color:#f39c12;'>\u25cf</span>&ensp;"
+                "&lt;\u202f0.80&thinsp;<span style='color:#e74c3c;'>\u25cf</span>&ensp;"
+                "\u2020\u202f=\u202fno pdfplumber baseline, compared against original extracted XML"
+                "</div></div></div>"
+            )
+
+        _EXPORT_SPINNER = (
+            "<div style='background:#1a1a2e;border:1px solid #3a3a5c;border-radius:8px;"
+            "padding:14px 18px;margin:6px 0;font-family:sans-serif;font-size:12px;color:#7ec8e3;'>"
+            "\u23f3 Computing export preview\u2026</div>"
+        )
+
+        def _preview_for_pdf(all_tables, theme):
+            """Show the export preview panel when the user clicks Export PDF."""
+            yield (
+                gr.update(value=_EXPORT_SPINNER, visible=True),
+                gr.update(visible=True),   # confirm_pdf_btn
+                gr.update(visible=False),  # confirm_docx_btn
+                gr.update(visible=True),   # cancel_btn
+            )
+            data = database.compute_export_preview(table_catalog=all_tables or None)
+            html = _build_export_preview_html(data, "pdf")
+            yield (
+                gr.update(value=html, visible=True),
+                gr.update(visible=True),
+                gr.update(visible=False),
+                gr.update(visible=True),
+            )
+
+        def _preview_for_docx(all_tables):
+            """Show the export preview panel when the user clicks Export .docx."""
+            yield (
+                gr.update(value=_EXPORT_SPINNER, visible=True),
+                gr.update(visible=False),  # confirm_pdf_btn
+                gr.update(visible=True),   # confirm_docx_btn
+                gr.update(visible=True),   # cancel_btn
+            )
+            data = database.compute_export_preview(table_catalog=all_tables or None)
+            html = _build_export_preview_html(data, "docx")
+            yield (
+                gr.update(value=html, visible=True),
+                gr.update(visible=False),
+                gr.update(visible=True),
+                gr.update(visible=True),
+            )
+
+        def _confirm_export_pdf_fn(all_tables, theme):
+            """Confirm + run full-document PDF export, hiding the review panel."""
+            _hide = (gr.update(visible=False), gr.update(visible=False), gr.update(visible=False))
+            for out in _export_document_pdf(all_tables, theme):
+                yield (*out, *_hide)
+
+        def _confirm_export_docx_fn(all_tables):
+            """Confirm + run .docx export, hiding the review panel."""
+            _hide = (gr.update(visible=False), gr.update(visible=False), gr.update(visible=False))
+            for out in _export_document_docx(all_tables):
+                yield (*out, *_hide)
+
+        # ── Export button wiring ──────────────────────────────────────────────
+        # First click → preview; Confirm → actual export
+        tb_export_pdf_btn.click(
+            _preview_for_pdf,
+            inputs=[all_tables_state, tb_cals_theme],
+            outputs=[tb_export_review_panel, tb_confirm_pdf_btn, tb_confirm_docx_btn, tb_cancel_export_btn],
+        )
+        tb_export_docx_btn.click(
+            _preview_for_docx,
+            inputs=[all_tables_state],
+            outputs=[tb_export_review_panel, tb_confirm_pdf_btn, tb_confirm_docx_btn, tb_cancel_export_btn],
+        )
+        tb_confirm_pdf_btn.click(
+            _confirm_export_pdf_fn,
+            inputs=[all_tables_state, tb_cals_theme],
+            outputs=[tb_export_pdf_status, tb_export_pdf_file,
+                     tb_export_review_panel, tb_confirm_pdf_btn, tb_cancel_export_btn],
+        )
+        tb_confirm_docx_btn.click(
+            _confirm_export_docx_fn,
+            inputs=[all_tables_state],
+            outputs=[tb_export_docx_status, tb_export_docx_file,
+                     tb_export_review_panel, tb_confirm_docx_btn, tb_cancel_export_btn],
+        )
+        tb_cancel_export_btn.click(
+            lambda: (
+                gr.update(visible=False), gr.update(visible=False),
+                gr.update(visible=False), gr.update(visible=False),
+            ),
+            inputs=[],
+            outputs=[tb_export_review_panel, tb_confirm_pdf_btn,
+                     tb_confirm_docx_btn, tb_cancel_export_btn],
+        )
+
         def _toggle_model_tab():
             return {
                 group_router: gr.update(visible=False),
@@ -2383,147 +3340,6 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
         
         _my_build_stream = functools.partial(_stream_predict, client, app)
 
-        # Submit a sample query
-        sample_query_1.click(
-            _my_build_stream, [sample_query_1, 
-                               model_generator,
-                               model_router,
-                               model_retrieval,
-                               model_hallucination,
-                               model_answer,
-                               prompt_generator,
-                               prompt_router,
-                               prompt_retrieval,
-                               prompt_hallucination,
-                               prompt_answer,
-                               router_use_nim,
-                               retrieval_use_nim,
-                               generator_use_nim,
-                               hallucination_use_nim,
-                               answer_use_nim,
-                               nim_generator_ip,
-                               nim_router_ip,
-                               nim_retrieval_ip,
-                               nim_hallucination_ip,
-                               nim_answer_ip,
-                               nim_generator_port,
-                               nim_router_port,
-                               nim_retrieval_port,
-                               nim_hallucination_port,
-                               nim_answer_port,
-                               nim_generator_id,
-                               nim_router_id,
-                               nim_retrieval_id,
-                               nim_hallucination_id,
-                               nim_answer_id,
-                               chatbot], [msg, chatbot, actions, table_gallery, inspection_box, table_refs_state, optimize_btn, xml_box]
-        )
-
-        sample_query_2.click(
-            _my_build_stream, [sample_query_2, 
-                               model_generator,
-                               model_router,
-                               model_retrieval,
-                               model_hallucination,
-                               model_answer,
-                               prompt_generator,
-                               prompt_router,
-                               prompt_retrieval,
-                               prompt_hallucination,
-                               prompt_answer,
-                               router_use_nim,
-                               retrieval_use_nim,
-                               generator_use_nim,
-                               hallucination_use_nim,
-                               answer_use_nim,
-                               nim_generator_ip,
-                               nim_router_ip,
-                               nim_retrieval_ip,
-                               nim_hallucination_ip,
-                               nim_answer_ip,
-                               nim_generator_port,
-                               nim_router_port,
-                               nim_retrieval_port,
-                               nim_hallucination_port,
-                               nim_answer_port,
-                               nim_generator_id,
-                               nim_router_id,
-                               nim_retrieval_id,
-                               nim_hallucination_id,
-                               nim_answer_id,
-                               chatbot], [msg, chatbot, actions, table_gallery, inspection_box, table_refs_state, optimize_btn, xml_box]
-        )
-
-        sample_query_3.click(
-            _my_build_stream, [sample_query_3, 
-                               model_generator,
-                               model_router,
-                               model_retrieval,
-                               model_hallucination,
-                               model_answer,
-                               prompt_generator,
-                               prompt_router,
-                               prompt_retrieval,
-                               prompt_hallucination,
-                               prompt_answer,
-                               router_use_nim,
-                               retrieval_use_nim,
-                               generator_use_nim,
-                               hallucination_use_nim,
-                               answer_use_nim,
-                               nim_generator_ip,
-                               nim_router_ip,
-                               nim_retrieval_ip,
-                               nim_hallucination_ip,
-                               nim_answer_ip,
-                               nim_generator_port,
-                               nim_router_port,
-                               nim_retrieval_port,
-                               nim_hallucination_port,
-                               nim_answer_port,
-                               nim_generator_id,
-                               nim_router_id,
-                               nim_retrieval_id,
-                               nim_hallucination_id,
-                               nim_answer_id,
-                               chatbot], [msg, chatbot, actions, table_gallery, inspection_box, table_refs_state, optimize_btn, xml_box]
-        )
-
-        sample_query_4.click(
-            _my_build_stream, [sample_query_4, 
-                               model_generator,
-                               model_router,
-                               model_retrieval,
-                               model_hallucination,
-                               model_answer,
-                               prompt_generator,
-                               prompt_router,
-                               prompt_retrieval,
-                               prompt_hallucination,
-                               prompt_answer,
-                               router_use_nim,
-                               retrieval_use_nim,
-                               generator_use_nim,
-                               hallucination_use_nim,
-                               answer_use_nim,
-                               nim_generator_ip,
-                               nim_router_ip,
-                               nim_retrieval_ip,
-                               nim_hallucination_ip,
-                               nim_answer_ip,
-                               nim_generator_port,
-                               nim_router_port,
-                               nim_retrieval_port,
-                               nim_hallucination_port,
-                               nim_answer_port,
-                               nim_generator_id,
-                               nim_router_id,
-                               nim_retrieval_id,
-                               nim_hallucination_id,
-                               nim_answer_id,
-                               chatbot], [msg, chatbot, actions, table_gallery, inspection_box, table_refs_state, optimize_btn, xml_box]
-        )
-        
         msg.submit(
             _my_build_stream, [msg, 
                                model_generator,
